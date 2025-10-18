@@ -27,7 +27,6 @@ ENV PATH=/root/.local/bin:$PATH
 
 # Copy application code
 COPY app ./app
-COPY .env.example .env
 
 # Create necessary directories
 RUN mkdir -p logs uploads temp
