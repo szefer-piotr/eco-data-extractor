@@ -19,16 +19,28 @@ class Settings(BaseSettings):
         "http://127.0.0.1:3000",
     ]
 
+    LOG_LEVEL: str = "INFO"
+    LOG_FILE: str = "./logs/app.log"
+
+    # Database settings
     DATABASE_URL: str = "sqlite:///./ecodata.db"
-    MAX_FILE_SIZE_MB: int = 100
-    UPLOAD_DIR: str = "./uploads"
-    TEMP_DIR: str = "./temp"
-    MAX_CONCURENT_JOBS: int = 5
+    DATABASE_ECHO: bool = False  # Set to True for SQL debugging
+
+    # Job processing settings
+    MAX_CONCURRENT_JOBS: int = 5
     JOB_TIMEOUT_SECONDS: int = 3600
     RESULT_RETENTION_DAYS: int = 30
 
-    LOG_LEVEL: str = "INFO"
-    LOG_FILE: str = "./logs/app.log"
+    # LLM settings
+    DEFAULT_TEMPERATURE: float = 0.7
+    MAX_RETRIES: int = 3
+    REQUEST_TIMEOUT_SECONDS: int = 300
+
+    # File upload settings
+    ALLOWED_FILE_TYPES: List[str] = ["csv", "pdf"]
+    MAX_FILE_SIZE_MB: int = 100
+    UPLOAD_DIR: str = "./uploads"
+    TEMP_DIR: str = "./temp"
 
     class Config:
         env_file = ".env"
