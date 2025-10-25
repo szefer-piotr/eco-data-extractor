@@ -3,8 +3,8 @@
 from pyexpat import model
 from ssl import create_default_context
 from sqlalchemy import Column, String, Integer, Float, DateTime, JSON, Boolean, Text
-from sqlalchemy.ext.declarative import declarative_base
-from datetime import datetime
+from sqlalchemy.orm import declarative_base
+from datetime import datetime, timezone
 from typing import Optional
 
 Base = declarative_base()
@@ -25,7 +25,7 @@ class ExtractionJob(Base):
     
     categories = Column(JSON, nullable=False)  # Stored as JSON
     
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
     started_at = Column(DateTime, nullable=True)
     completed_at = Column(DateTime, nullable=True)
     
