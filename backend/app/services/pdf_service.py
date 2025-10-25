@@ -1,6 +1,7 @@
 """PDF file processing service"""
 
 import logging
+import re
 from typing import List, Dict, Optional, Tuple
 import io
 
@@ -8,6 +9,31 @@ logger = logging.getLogger(__name__)
 
 class PDFService:
     """Service for processing PDF files"""
+
+    @staticmethod
+    def remove_references(text: str) -> str:
+        """
+        Remove common reference/bibliography sections from text
+
+        Args:
+            text: Full PDF text
+
+        Returns:
+            Text with references section removed
+        """
+        reference_markers = [
+            r'(?i)\n\s*(references|bibliography|works cited|citations)\s*\n',
+            r'(?i)\n\s*\[?references?\]?\s*\n',
+        ]
+
+        for marker in reference_markers:
+            match = re.search(marker, text)
+            if match:
+                text = text[:match.start()]
+                logger.info("Removed references section from PDF")
+                break
+
+        return text.strip()
     
     @staticmethod
     def extract_text(pdf_content: bytes) -> str:
@@ -32,11 +58,12 @@ class PDFService:
             text = ""
             for page_num, page in enumerate(pdf_reader.pages):
                 try:
-                    text += f"\n--- Page {page_num + 1} ---\n"
                     text += page.extract_text()
                 except Exception as e:
                     logger.warning(f"Error extracting text from page {page_num + 1}: {str(e)}")
                     continue
+            
+            text = PDFService.remove_references(text)
             
             return text
             

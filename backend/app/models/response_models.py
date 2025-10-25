@@ -18,7 +18,7 @@ class ExtractionResultItem(BaseModel):
     row_id: str = Field(..., description="Row identifier from input data")
     extracted_data: Dict[str, Any] = Field(..., description="Extracted categories and values")
     confidence: float = Field(default=1.0, ge=0, le=1)
-    errors: Optional[List[str]] = Field(default=None,desctiption="Any extraction errors")
+    errors: Optional[List[str]] = Field(default=None, description="Any extraction errors")
 
 class ExtractionResult(BaseModel):
     """Complete extraction resutls"""
@@ -59,6 +59,6 @@ class ErrorResponse(BaseModel):
 class HealthCheckResponse(BaseModel):
     """Health check response"""
     status: str
-    varsion: str
+    version: str
     database_connected: bool
     timestamp: datetime

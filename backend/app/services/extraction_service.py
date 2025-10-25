@@ -122,7 +122,7 @@ class ExtractionService:
         return len(errors) == 0, errors
 
     @staticmethod
-    async def process_extraction(
+    def process_extraction(
         rows: List[Dict[str, str]],
         categories: List[CategoryField],
         provider_name: str,
@@ -210,7 +210,7 @@ class ExtractionService:
             
             # Call progress callback
             if progress_callback:
-                await progress_callback(
+                progress_callback(
                     processed=idx + 1,
                     total=total_rows,
                     current_row_id=row_id

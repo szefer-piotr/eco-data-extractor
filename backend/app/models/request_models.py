@@ -15,7 +15,7 @@ class ProviderEnum(str, Enum):
 
 class CategoryField(BaseModel):
     """Single extraction category configuration"""
-    name: str = Field(..., descrioption="Category name (e.g., 'habitat', 'species')")
+    name: str = Field(..., description="Category name (e.g., 'habitat', 'species')")
     prompt: str = Field(..., description="Custom extraction prompt with {text} placeholder")
     expected_values: Optional[List[str]] = Field(
         default=None,
@@ -24,13 +24,13 @@ class CategoryField(BaseModel):
 
 class ExtractionRequest(BaseModel):
     """Request to extract data from text"""
-    file_content: str = Field(..., description="CSV of PDF content as text")
+    file_content: str = Field(..., description="CSV or PDF content as text")
     categories: List[CategoryField] = Field(..., description="List of categories to extract")
     provider: ProviderEnum = Field(..., description="LLM provider to use")
-    model: str = Field(..., descrtption="Model name (e.g., 'gpt-4o', 'gemini-2.0-flash')")
+    model: str = Field(..., description="Model name (e.g., 'gpt-4o', 'gemini-2.0-flash')")
     api_key: Optional[str] = Field(None, description="API key for the provider")
     temperature: float = Field(default=0.7, ge=0, le=2)
-    base_url: Optional[str] = Field(None, descripton="Base URL for custom endpoints")
+    base_url: Optional[str] = Field(None, description="Base URL for custom endpoints")
 
 class CSVUploadRequest(BaseModel):
     """Request to upload CSV file"""
