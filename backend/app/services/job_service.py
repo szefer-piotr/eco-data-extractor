@@ -6,6 +6,8 @@ import logging
 
 from app.models.request_models import CategoryField
 from app.models.response_models import ExtractionStatus
+from app.services.data_storage_service import DataStorageService
+from app.services.extraction_service import ExtractionService
 
 logger = logging.getLogger(__name__)
 
@@ -110,3 +112,59 @@ class JobManager:
         job["completed_at"] = datetime.now(timezone.utc)
         logger.info(f"Job {job_id} cancelled")
         return True
+
+
+class JobProcessor:
+    """Orchestrates background job processing"""
+    @staticmethod
+    def process_job(
+        job_id: str,
+        categories: List[CategoryField],
+        provider: str,
+        model: str,
+        api_key: Optional[str] = None
+    ):
+        """
+        Process extraction job in the background
+        Orchestrates the complete extraction workflow
+        """
+        try:
+            logger.info(f"Starting background processing for job {job_id}")
+            rows = DataStorageService.get_job_rows(job_id)
+            logger.info(f"Retrieved {len(rows)} rows for job {job_id}")
+
+            JobManager.update_job_progress(
+                job_id=job_id,
+                processed_rows=0,
+                status=ExtractionStatus.PROCESSING
+            )
+            
+            def progress_callback(processed, total, current_row_id):
+                JobManager.update_job_progress(
+                    job_id=job_id,
+                    processed_rows=processed,
+                    current_row=current_row_id,
+                    status=ExtractionStatus.PROCESSING
+                )
+
+            results = ExtractionService.process_extraction(
+                rows=rows,
+                categories=categories,
+                provider_name=provider,
+                model_name=model,
+                api_key=api_key,
+                progress_callback=progress_callback
+            )
+
+            DataStorageService.store_job_results(job_id, results)
+            logger.info(f"Stored results for job {job_id}")
+
+            JobManager.complete_job(job_id, ExtractionStatus.COMPLETED)
+            logger.info(f"Job {job_id} completed successfully")
+
+        except Exception as e:
+            logger.error(f"Error processing job {job_id}: {str(e)}")
+            JobManager.complete_job(job_id, ExtractionStatus.FAILED)
+
+
+

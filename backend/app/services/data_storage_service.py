@@ -34,7 +34,18 @@ class DataStorageService:
 
         with open(results_file, "w") as f:
             json.dump(results, f, indent=2)
-        return truediv
+        return True
+
+    @staticmethod
+    def get_job_results(job_id: str) -> List[Dict]:
+        results_file = DataStorageService.STORAGE_DIR / job_id / "results.json"
+        if not results_file.exists():
+            return []
+        try:
+            with open(results_file, "r") as f:
+                return json.load(f)
+        except json.JSONDecodeError:
+            return []
 
     @staticmethod
     def cleanup_job(job_id: str) -> bool:

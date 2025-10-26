@@ -8,7 +8,7 @@ from datetime import datetime
 
 from app.models.request_models import CategoryField, ExtractionRequest
 from app.models.response_models import ExtractionResultItem, ExtractionResult, ExtractionStatus
-from .llm_providers import get_provider
+from app.services.llm_providers import get_provider
 
 logger = logging.getLogger(__name__)
 

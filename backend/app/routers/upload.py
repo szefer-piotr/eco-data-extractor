@@ -1,14 +1,20 @@
 """File upload endpoints"""
-from backend.app.routers import status
-from fastapi import APIRouter, UploadFile, File, HTTPException, Form
+
+from fastapi import APIRouter, UploadFile, File, HTTPException, Form, BackgroundTasks
 from typing import List
 import io
+import logging
 import pandas as pd
+
+from app.routers import status
+from app.services.csv_service import CSVService
 from app.services.pdf_service import PDFService
-from app.services.job_service import JobManager
+from app.services.job_service import JobManager, JobProcessor
 from app.services.data_storage_service import DataStorageService
 from app.models.request_models import CategoryField
 
+
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 @router.post("/csv")
@@ -16,7 +22,8 @@ def upload_csv(
     file: UploadFile = File(...),
     categories_json: str = Form(...),
     provider: str = Form(...),
-    model: str = Form(...)
+    model: str = Form(...),
+    background_tasks: BackgroundTasks = None
 ):
     """
     Upload CSV file and start extraction job
@@ -27,17 +34,13 @@ def upload_csv(
 
     try: 
         categories = [CategoryField(**c) for c in json.loads(categories_json)]
-        csv_content = file.read()
-        df = pd.read_csv(io.BytesIO(csv_content))
-        rows = []
-        for idx, row in df.iterrows():
-            abstract = row.get("abstract", "") or row.get("text")
-            title = row.get("title", "")
-            text = f"{title}\n{abstract}" if title else abstract
-            rows.append({
-                "id": str(idx),
-                "text": text
-            })
+        csv_bytes = file.read()
+        csv_text = csv_bytes.decode('utf-8')
+        df = CSVService.load_csv(csv_text)
+        
+        id_col = 'id' if 'id' in df.columns else df.columns[0]
+        text_col = 'abstract' if 'abstract' in df.columns else 'text' if 'text' in df.columns else df.columns[1]
+        rows = CSVService.extract_rows(df, id_col, text_col)
 
         job_id = JobManager.create_job(
             categories=categories,
@@ -47,6 +50,14 @@ def upload_csv(
         )
 
         DataStorageService.store_job_rows(job_id, rows)
+
+        background_tasks.add_task(
+            JobProcessor.process_job,
+            job_id=job_id,
+            categories=categories,
+            provider=provider,
+            model=model
+        )
     
         return {
             "job_id": job_id,
@@ -64,7 +75,8 @@ def upload_pdf(
     files: List[UploadFile] = File(...),
     categories_json: str = Form(...),
     provider: str = Form(...),
-    model: str = Form(...)
+    model: str = Form(...),
+    background_tasks: BackgroundTasks = None
 ):
     """
     Upload multiple PDF files and start extraction job
@@ -101,6 +113,14 @@ def upload_pdf(
 
         DataStorageService.store_job_rows(job_id, rows)
         
+        background_tasks.add_taks(
+            JobProcessor.process_job,
+            job_id=job_id,
+            categories=categories,
+            provider=provider,
+            model=model
+        )
+
         return {
             "job_id": job_id,
             "status": "submitted",
