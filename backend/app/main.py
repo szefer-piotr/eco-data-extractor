@@ -82,3 +82,4 @@ def extract():
     # 1 User submitts a file (upload_service?), categories + LLM config.
     # 2. Get back, job_id immediately.
     # 3. Job processing in the background.
+    pass

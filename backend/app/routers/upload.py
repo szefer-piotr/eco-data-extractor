@@ -34,7 +34,7 @@ def upload_csv(
 
     try: 
         categories = [CategoryField(**c) for c in json.loads(categories_json)]
-        csv_bytes = file.read()
+        csv_bytes = file.file.read()
         csv_text = csv_bytes.decode('utf-8')
         df = CSVService.load_csv(csv_text)
         
@@ -71,7 +71,7 @@ def upload_csv(
 
 
 @router.post("/pdf")
-def upload_pdf(
+async def upload_pdf(
     files: List[UploadFile] = File(...),
     categories_json: str = Form(...),
     provider: str = Form(...),
@@ -90,7 +90,7 @@ def upload_pdf(
 
         rows = []
         for idx, file in enumerate(files):
-            pdf_content = file.read()
+            pdf_content = await file.read()
 
             is_valid, error = PDFService.validate_pdf(pdf_content)
             if not is_valid:
@@ -113,7 +113,7 @@ def upload_pdf(
 
         DataStorageService.store_job_rows(job_id, rows)
         
-        background_tasks.add_taks(
+        background_tasks.add_task(
             JobProcessor.process_job,
             job_id=job_id,
             categories=categories,

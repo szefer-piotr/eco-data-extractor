@@ -2,11 +2,11 @@
 import logging
 from signal import default_int_handler
 from unittest import result
-from backend.app.models.request_models import CategoryField, ExtractionRequest
-from backend.app.models.response_models import ExtractionStatus
-from backend.app.routers import status
-from backend.app.services.data_storage_service import DataStorageService
-from backend.app.services.extraction_service import ExtractionService
+from app.models.request_models import CategoryField, ExtractionRequest
+from app.models.response_models import ExtractionStatus
+from app.routers import status
+from app.services.data_storage_service import DataStorageService
+from app.services.extraction_service import ExtractionService
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 
 from app.services.job_service import JobManager
