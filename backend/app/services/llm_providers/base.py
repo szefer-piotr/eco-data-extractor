@@ -27,7 +27,7 @@ class BaseLLMProvider(ABC):
             base_url: Optional custom base URL
             temperature: Generation temperature (0-2)
         """
-        self.model_naeme = model_name
+        self.model_name = model_name
         self.api_key = api_key
         self.base_url = base_url
         self.temperature = temperature

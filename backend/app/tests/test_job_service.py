@@ -9,7 +9,7 @@ class TestJobCreation:
         job_id = JobManager.create_job(
             categories=[],
             provider="openai",
-            model="gpt-4o",
+            model="gpt-4o-mini",
             rows=10
         )
         assert job_id is not None
@@ -21,7 +21,7 @@ class TestJobCreation:
         job_id = JobManager.create_job(
             categories=[],
             provider="openai",
-            model="gpt-4o",
+            model="gpt-4o-mini",
             rows=10
         )
         job = JobManager.get_job(job_id)
@@ -41,7 +41,7 @@ class TestJobRetrieval:
         job_id = JobManager.create_job(
             categories=[],
             provider="openai",
-            model="gpt-4o",
+            model="gpt-4o-mini",
             rows=10
         )
         job = JobManager.get_job(job_id)
@@ -60,7 +60,7 @@ class TestJobProgress:
         job_id = JobManager.create_job(
             categories=[],
             provider="openai",
-            model="gpt-4o",
+            model="gpt-4o-mini",
             rows=10
         )
         
@@ -76,7 +76,7 @@ class TestJobProgress:
         job_id = JobManager.create_job(
             categories=[],
             provider="openai",
-            model="gpt-4o",
+            model="gpt-4o-mini",
             rows=10
         )
         
@@ -98,7 +98,7 @@ class TestJobCompletion:
         job_id = JobManager.create_job(
             categories=[],
             provider="openai",
-            model="gpt-4o",
+            model="gpt-4o-mini",
             rows=10
         )
         
@@ -114,7 +114,7 @@ class TestJobCompletion:
         job_id = JobManager.create_job(
             categories=[],
             provider="openai",
-            model="gpt-4o",
+            model="gpt-4o-mini",
             rows=10
         )
         
@@ -130,7 +130,7 @@ class TestJobCompletion:
         job_id = JobManager.create_job(
             categories=[],
             provider="openai",
-            model="gpt-4o",
+            model="gpt-4o-mini",
             rows=10
         )
         

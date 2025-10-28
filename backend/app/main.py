@@ -73,13 +73,3 @@ if __name__ == "__main__":
         host=settings.HOST,
         port=settings.PORT,
     )
-
-
-# Implement POST /api/extraction/extract
-
-@app.post("/api/extraction/extract")
-def extract():
-    # 1 User submitts a file (upload_service?), categories + LLM config.
-    # 2. Get back, job_id immediately.
-    # 3. Job processing in the background.
-    pass

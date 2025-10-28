@@ -12,13 +12,13 @@ from app.services.pdf_service import PDFService
 from app.services.job_service import JobManager, JobProcessor
 from app.services.data_storage_service import DataStorageService
 from app.models.request_models import CategoryField
-
+from app.config import settings
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
 @router.post("/csv")
-def upload_csv(
+async def upload_csv(
     file: UploadFile = File(...),
     categories_json: str = Form(...),
     provider: str = Form(...),
@@ -34,7 +34,7 @@ def upload_csv(
 
     try: 
         categories = [CategoryField(**c) for c in json.loads(categories_json)]
-        csv_bytes = file.file.read()
+        csv_bytes = await file.read()
         csv_text = csv_bytes.decode('utf-8')
         df = CSVService.load_csv(csv_text)
         
@@ -51,12 +51,20 @@ def upload_csv(
 
         DataStorageService.store_job_rows(job_id, rows)
 
+        DataStorageService.store_file_metadata(
+            file_id=job_id,
+            file_type="csv",
+            filename=file.filename,
+            columns=df.columns.tolist()
+        )
+
         background_tasks.add_task(
             JobProcessor.process_job,
             job_id=job_id,
             categories=categories,
             provider=provider,
-            model=model
+            model=model,
+            api_key=settings.OPENAI_API_KEY
         )
     
         return {
@@ -112,13 +120,22 @@ async def upload_pdf(
         )
 
         DataStorageService.store_job_rows(job_id, rows)
+
+        filenames = [file.filename for file in files]
+        DataStorageService.store_file_metadata(
+            file_id=job_id,
+            file_type="pdf",
+            filename=",".join(filenames),
+            columns=["id","text","source"]
+        )
         
         background_tasks.add_task(
             JobProcessor.process_job,
             job_id=job_id,
             categories=categories,
             provider=provider,
-            model=model
+            model=model,
+            api_key=settings.OPENAI_API_KEY
         )
 
         return {
@@ -130,3 +147,28 @@ async def upload_pdf(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+    
+@router.get("/validate")
+async def validate_file(file_id: str):
+    """
+    Check if uploaded file is valid
+    
+    Input: file_id from upload response
+    Output: validation result
+    """
+    if not DataStorageService.file_exists(file_id):
+        raise HTTPException(
+            status_code=404,
+            detail=f"File {file_id} not found. Did you upload it?"
+        )
+    
+    file_data = DataStorageService.get_file_metadata(file_id)
+    
+    return {
+        "file_id": file_id,
+        "is_valid": True,
+        "type": file_data.get("type", "unknown"),
+        "filename": file_data.get("filename"),
+        "columns": file_data.get("columns", [])
+    }

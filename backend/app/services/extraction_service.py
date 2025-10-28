@@ -2,6 +2,7 @@
 
 import json
 import logging
+import re
 from typing import Dict, List, Any, Optional, Tuple
 import uuid
 from datetime import datetime
@@ -9,6 +10,7 @@ from datetime import datetime
 from app.models.request_models import CategoryField, ExtractionRequest
 from app.models.response_models import ExtractionResultItem, ExtractionResult, ExtractionStatus
 from app.services.llm_providers import get_provider
+from app.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -36,13 +38,13 @@ class ExtractionService:
         category_names = []
 
         for cat in categories:
-            category_desctiptions.append(f"- {cat.name}: {cat:prompt}")
+            category_desctiptions.append(f"- {cat.name}: {cat.prompt}")
             category_names.append(cat.name)
 
         expected_output_example = {cat.name: "value" for cat in categories}
 
         prompt = f"""Extract the following information from the text below.
-        For each category, provide the extracted value or null if not found.and
+        For each category, provide the extracted value or null if not found. And
         Categories to extract:
         {chr(10).join(category_desctiptions)}
         Return ONLY valid JSON objects with these exact keys: {json.dumps(category_names)}
@@ -131,7 +133,7 @@ class ExtractionService:
         temperature: float = 0.7,
         base_url: Optional[str] = None,
         progress_callback: Optional[callable] = None
-    ) -> List[ExtractionResultItem]:
+    ) -> List[Dict]:
         """
         Process extraction for multiple rows
         
@@ -215,5 +217,12 @@ class ExtractionService:
                     total=total_rows,
                     current_row_id=row_id
                 )
-        
-        return results
+
+        return [
+            {
+                "row_id": r.row_id,
+                "extracted_data": r.extracted_data,
+                "errors": r.errors
+            }
+            for r in results
+        ]

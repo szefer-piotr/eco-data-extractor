@@ -42,6 +42,11 @@ class Settings(BaseSettings):
     UPLOAD_DIR: str = "./uploads"
     TEMP_DIR: str = "./temp"
 
+    # LLM Provider settings
+    OPENAI_API_KEY: str = ""  # Will be loaded from .env
+    GOOGLE_API_KEY: str = ""
+    DEEPSEEK_API_KEY: str = ""
+
     class Config:
         env_file = ".env"
         case_sensitive = True
