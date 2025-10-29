@@ -1,41 +1,58 @@
-import React from 'react'
-import { HomePage } from '@pages/HomePage'
-import { ExtractionPage } from '@pages/ExtractionPage'
-import './App.css'
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { Container, AppBar, Toolbar, Button, Box } from '@mui/material';
+import HomePage from '@pages/HomePage';
+import ExtractionPage from '@pages/ExtractionPage';
+import HistoryPage from '@pages/HistoryPage';
+import SettingsPage from '@pages/SettingsPage';
+import NotFoundPage from '@pages/NotFoundPage';
+import './App.css';
 
 const App: React.FC = () => {
-  const [currentPage, setCurrentPage] = React.useState('home')
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center gap-8">
-              <h1 className="text-xl font-bold">EcoData Extractor</h1>
-              <button
-                onClick={() => setCurrentPage('home')}
-                className={`px-3 py-2 ${currentPage === 'home' ? 'text-blue-600' : 'text-gray-600'}`}
-              >
-                Home
-              </button>
-              <button
-                onClick={() => setCurrentPage('extraction')}
-                className={`px-3 py-2 ${currentPage === 'extraction' ? 'text-blue-600' : 'text-gray-600'}`}
-              >
-                Extraction
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
+    <Router>
+      <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+        {/* Header */}
+        <AppBar position="static">
+          <Toolbar>
+            <Link to="/" style={{ textDecoration: 'none', color: 'inherit', flex: 1 }}>
+              <Box sx={{ fontSize: '1.25rem', fontWeight: 'bold' }}>EcoData Extractor</Box>
+            </Link>
+            <nav style={{ display: 'flex', gap: '1rem' }}>
+              <Link to="/" style={{ textDecoration: 'none' }}>
+                <Button color="inherit">Home</Button>
+              </Link>
+              <Link to="/extraction" style={{ textDecoration: 'none' }}>
+                <Button color="inherit">Extraction</Button>
+              </Link>
+              <Link to="/history" style={{ textDecoration: 'none' }}>
+                <Button color="inherit">History</Button>
+              </Link>
+              <Link to="/settings" style={{ textDecoration: 'none' }}>
+                <Button color="inherit">Settings</Button>
+              </Link>
+            </nav>
+          </Toolbar>
+        </AppBar>
 
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        {currentPage === 'home' && <HomePage />}
-        {currentPage === 'extraction' && <ExtractionPage />}
-      </main>
-    </div>
-  )
-}
+        {/* Main Content */}
+        <Container maxWidth="lg" sx={{ py: 4, flex: 1 }}>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/extraction" element={<ExtractionPage />} />
+            <Route path="/history" element={<HistoryPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </Container>
 
-export default App
+        {/* Footer */}
+        <Box sx={{ bgcolor: '#f5f5f5', py: 2, textAlign: 'center', mt: 'auto' }}>
+          <p>&copy; 2025 EcoData Extractor. All rights reserved.</p>
+        </Box>
+      </Box>
+    </Router>
+  );
+};
+
+export default App;
