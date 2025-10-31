@@ -2,6 +2,7 @@
 
 from typing import List
 from pydantic_settings import BaseSettings
+from pydantic import ConfigDict
 
 class Settings(BaseSettings):
     """Application settings from environment variables"""
@@ -46,10 +47,13 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = ""  # Will be loaded from .env
     GOOGLE_API_KEY: str = ""
     DEEPSEEK_API_KEY: str = ""
+    GROK_API_KEY: str = ""
 
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+    model_config = ConfigDict(
+        env_file=".env",
+        case_sensitive=True,
+        extra="ignore"  # Ignore extra environment variables
+    )
 
 
 settings = Settings()

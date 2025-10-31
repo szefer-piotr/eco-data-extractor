@@ -102,10 +102,34 @@ def get_models(provider: str = None):
                     detail=f"Unknown provider: {provider}. Available: {', '.join(all_providers.keys())}"
                 )
             return {
-                provider: all_providers[provider]
+                "providers": {
+                    provider: {
+                        "name": all_providers[provider]["name"],
+                        "models": all_providers[provider]["models"],
+                        "requires_api_key": all_providers[provider]["requires_api_key"],
+                        "default_model": all_providers[provider].get("default_model", all_providers[provider]["models"][0] if all_providers[provider]["models"] else "")
+                    }
+                },
+                "defaultProvider": provider,
+                "defaultModel": all_providers[provider].get("default_model", all_providers[provider]["models"][0] if all_providers[provider]["models"] else "")
             }
         
-        return all_providers
+        # Build the response with proper structure
+        providers_dict = {}
+        for prov_name, config in all_providers.items():
+            providers_dict[prov_name] = {
+                "name": config["name"],
+                "models": config["models"],
+                "requires_api_key": config["requires_api_key"],
+                "default_model": config.get("default_model", config["models"][0] if config["models"] else "")
+            }
+        
+        return {
+            "providers": providers_dict,
+            "defaultProvider": "openai",
+            "defaultModel": "gpt-4o-mini",
+            "temperatureRange": {"min": 0.0, "max": 2.0}
+        }
 
     except HTTPException:
         raise

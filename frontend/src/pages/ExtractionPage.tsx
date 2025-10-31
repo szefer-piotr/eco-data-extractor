@@ -1,39 +1,40 @@
-import React, { useState } from 'react';
-import { Box, Typography, Container, Tabs, Tab } from '@mui/material';
-import FileUploadWorkflow from '@components/upload/FileUploadWorkflow';
-import ExtractionCategoryPanel from '@components/categories/ExtractionCategoryPanel';
-
-function TabPanel(props: { children?: React.ReactNode; index: number; value: number }) {
-  const { children, value, index } = props;
-  return (
-    <div hidden={value !== index}>
-      {value === index && <Box sx={{ pt: 3 }}>{children}</Box>}
-    </div>
-  );
-}
+import React, { useState, useEffect } from 'react';
+import { Box, Typography, Container, Alert } from '@mui/material';
+import { useSearchParams } from 'react-router-dom';
+import ExtractionWorkflow from '@components/extraction/ExtractionWorkflow';
+import { useExtractionStore } from '@store/extractionStore';
 
 const ExtractionPage: React.FC = () => {
-  const [tabValue, setTabValue] = useState(0);
+  const [searchParams] = useSearchParams();
+  const [jobIdFromUrl, setJobIdFromUrl] = useState<string | null>(null);
+  const { reset } = useExtractionStore();
+
+  useEffect(() => {
+    const jobId = searchParams.get('jobId');
+    if (jobId) {
+      setJobIdFromUrl(jobId);
+    } else {
+      reset();
+    }
+  }, [searchParams, reset]);
 
   return (
-    <Container maxWidth="md">
+    <Container maxWidth="lg">
       <Box sx={{ py: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
+        <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold', mb: 1 }}>
           Data Extraction Workflow
         </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+          Follow the steps below to extract and configure your data
+        </Typography>
 
-        <Tabs value={tabValue} onChange={(_, val) => setTabValue(val)} sx={{ mb: 2 }}>
-          <Tab label="Step 1: Upload File" />
-          <Tab label="Step 3: Categories" />
-        </Tabs>
+        {jobIdFromUrl && (
+          <Alert severity="info" sx={{ mb: 3 }}>
+            Loading previous extraction job: <strong>{jobIdFromUrl}</strong>
+          </Alert>
+        )}
 
-        <TabPanel value={tabValue} index={0}>
-          <FileUploadWorkflow onComplete={() => setTabValue(1)} />
-        </TabPanel>
-
-        <TabPanel value={tabValue} index={1}>
-          <ExtractionCategoryPanel />
-        </TabPanel>
+        <ExtractionWorkflow initialJobId={jobIdFromUrl || undefined} />
       </Box>
     </Container>
   );

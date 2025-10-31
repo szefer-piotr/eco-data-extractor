@@ -19,6 +19,9 @@ import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ProcessingStatus from './ProcessingStatus';
 import StartProcessingButton from './StartProcessingButton';
 import CancelButton from './CancelButton';
+import FileUploadWorkflow from '../upload/FileUploadWorkflow';
+import ExtractionCategoryPanel from '../categories/ExtractionCategoryPanel';
+import ModelConfiguration from '../model-config/ModelConfiguration';
 import { useExtractionStore } from '@store/extractionStore';
 import { useUIStore } from '@store/uiStore';
 import { useConfigStore } from '@store/configStore';
@@ -29,11 +32,13 @@ import ResultsViewer from '../results/ResultViewer';
 interface ExtractionWorkflowProps {
   onComplete?: () => void;
   compact?: boolean; // If true, skip stepper and show components sequentially
+  initialJobId?: string;
 }
 
 const ExtractionWorkflow: React.FC<ExtractionWorkflowProps> = ({
   onComplete,
   compact = false,
+  initialJobId,
 }) => {
   const [activeStep, setActiveStep] = useState(0);
   const [jobStatus, setJobStatus] = useState<JobStatus | null>(null);
@@ -42,6 +47,15 @@ const ExtractionWorkflow: React.FC<ExtractionWorkflowProps> = ({
   const { jobId, reset: resetExtraction } = useExtractionStore();
   const { isConfigComplete } = useConfigStore();
   const { addNotification } = useUIStore();
+
+  // Load initial job if provided
+  useEffect(() => {
+    if (initialJobId && !jobId) {
+      // TODO: Load the initial job from the extraction store or API
+      // For now, we'll just move to the processing step
+      setActiveStep(3);
+    }
+  }, [initialJobId, jobId]);
 
   const steps = [
     'Upload File',
@@ -116,34 +130,14 @@ const ExtractionWorkflow: React.FC<ExtractionWorkflowProps> = ({
         <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
           Upload a CSV or PDF file to begin data extraction.
         </Typography>
-        {/* FileUploadWorkflow component would go here */}
-        <Alert severity="info">
-          File upload components are managed by parent component. Navigate to next step after uploading.
-        </Alert>
-        <Button
-          variant="contained"
-          onClick={handleNext}
-          endIcon={<ChevronRightIcon />}
-          sx={{ mt: 2 }}
-        >
-          Next: Configure Categories
-        </Button>
+        <FileUploadWorkflow onComplete={handleNext} />
       </Box>
     ),
 
     1: (
       <Box>
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          Step 2: Configure Extraction Categories
-        </Typography>
-        <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-          Define the categories and prompts for data extraction.
-        </Typography>
-        {/* ExtractionCategoryPanel component would go here */}
-        <Alert severity="info">
-          Category configuration is managed by parent component.
-        </Alert>
-        <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
+        <ExtractionCategoryPanel />
+        <Stack direction="row" spacing={1} sx={{ mt: 4 }}>
           <Button
             variant="outlined"
             onClick={handleBack}
@@ -164,17 +158,8 @@ const ExtractionWorkflow: React.FC<ExtractionWorkflowProps> = ({
 
     2: (
       <Box>
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          Step 3: Configure Model
-        </Typography>
-        <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-          Select your LLM provider and model, then configure parameters.
-        </Typography>
-        {/* ModelConfiguration component would go here */}
-        <Alert severity="info">
-          Model configuration is managed by parent component.
-        </Alert>
-        <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
+        <ModelConfiguration onConfigComplete={handleNext} compact={true} />
+        <Stack direction="row" spacing={1} sx={{ mt: 4 }}>
           <Button
             variant="outlined"
             onClick={handleBack}
