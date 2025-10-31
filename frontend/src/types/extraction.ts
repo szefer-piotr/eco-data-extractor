@@ -17,6 +17,7 @@ export interface UploadedFile {
   size: number;
   type: 'csv' | 'pdf';
   preview?: FilePreview;
+  nativeFile?: File;
 }
 
 export interface FilePreview {

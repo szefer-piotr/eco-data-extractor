@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { ExtractionConfig, Category, UploadedFile } from '@api-types/extraction';
+import { JobStatus } from '@api-types/api';
 
 interface ExtractionStore {
   // State
@@ -11,6 +12,7 @@ interface ExtractionStore {
   modelId: string;
   temperature: number;
   jobId: string | null;
+  jobStatus: JobStatus | null;
 
   // Actions
   setFile: (file: UploadedFile | null) => void;
@@ -25,6 +27,7 @@ interface ExtractionStore {
   setJobId: (jobId: string | null) => void;
   reset: () => void;
   getConfig: () => ExtractionConfig;
+  setJobStatus: (status: JobStatus | null) => void;
 }
 
 const initialState = {
@@ -40,6 +43,7 @@ const initialState = {
 
 export const useExtractionStore = create<ExtractionStore>((set, get) => ({
   ...initialState,
+  jobStatus: null,
 
   setFile: (file) => set({ file }),
 
@@ -83,6 +87,9 @@ export const useExtractionStore = create<ExtractionStore>((set, get) => ({
       temperature: state.temperature,
     };
   },
+
+  setJobStatus: (status) => set({ jobStatus: status }),
+
 }));
 
 export default useExtractionStore;

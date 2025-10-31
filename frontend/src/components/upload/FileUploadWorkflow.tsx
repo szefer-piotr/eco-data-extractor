@@ -47,6 +47,7 @@ const FileUploadWorkflow: React.FC<FileUploadWorkflowProps> = ({ onComplete }) =
         size: file.size,
         type: fileType,
         preview,
+        nativeFile: file,
       };
 
       setUploadedFile(uploadedFile);
