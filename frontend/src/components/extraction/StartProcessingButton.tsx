@@ -98,6 +98,14 @@ const StartProcessingButton: React.FC<StartProcessingButtonProps> = ({
         throw new Error('No file selected');
       }
 
+      const provider = selectedConfig?.provider || 'openai';
+      const model = selectedConfig?.model || 'gpt-4o-mini';
+      const apiKey = apiKeys[provider];
+
+      if (!apiKey) {
+        throw new Error(`No API key configured for provider: ${provider}. Please set it in Model Configuration step.`);
+      }
+
       // Convert categories to Record<string, string> format
       const categoriesRecord = categories.reduce(
         (acc, cat) => ({
@@ -120,13 +128,22 @@ const StartProcessingButton: React.FC<StartProcessingButtonProps> = ({
           file.nativeFile as File,
           idColumn,
           textColumn,
-          categoriesRecord
+          categoriesRecord,
+          provider,
+          model,
+          apiKey
         );
       } else if (file.type === 'pdf') {
         if (!file.nativeFile) {
           throw new Error('File data not available');
         }
-        response = await extractionApi.uploadPDF([file.nativeFile], categoriesRecord);
+        response = await extractionApi.uploadPDF(
+          [file.nativeFile],
+          categoriesRecord,
+          provider,
+          model,
+          apiKey
+        );
       } else {
         throw new Error('Invalid file type');
       }

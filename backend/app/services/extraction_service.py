@@ -173,24 +173,35 @@ class ExtractionService:
             
             # Construct prompt
             prompt = ExtractionService.construct_extraction_prompt(text, categories)
+            logger.info(f"Row {row_id}: Sending prompt to LLM (text length: {len(text)} chars)")
+            logger.debug(f"Row {row_id}: Full prompt:\n{prompt}")
             
             # Get LLM response
             llm_response = provider.generate_response(prompt)
+            logger.info(f"Row {row_id}: LLM response status: {llm_response.get('success')}")
             
             if not llm_response.get("success"):
+                error_msg = llm_response.get("error", "LLM error")
+                logger.error(f"Row {row_id}: LLM error: {error_msg}")
                 results.append(ExtractionResultItem(
                     row_id=row_id,
                     extracted_data={},
-                    errors=[llm_response.get("error", "LLM error")]
+                    errors=[error_msg]
                 ))
-                logger.error(f"LLM error for row {row_id}: {llm_response.get('error')}")
                 continue
+            
+            raw_response = llm_response.get("response", "")
+            logger.info(f"Row {row_id}: Raw LLM response:\n{raw_response}")
             
             # Parse response
             extracted_data, parse_error = ExtractionService.parse_llm_response(
-                llm_response.get("response", ""),
+                raw_response,
                 row_id
             )
+            
+            logger.info(f"Row {row_id}: Parsed extracted_data: {extracted_data}")
+            if parse_error:
+                logger.warning(f"Row {row_id}: Parse error: {parse_error}")
             
             errors = []
             if parse_error:
@@ -202,6 +213,8 @@ class ExtractionService:
                 categories
             )
             
+            logger.info(f"Row {row_id}: Validation result - Valid: {is_valid}, Errors: {validation_errors}")
+            
             errors.extend(validation_errors)
             
             results.append(ExtractionResultItem(
@@ -209,6 +222,8 @@ class ExtractionService:
                 extracted_data=extracted_data,
                 errors=errors if errors else None
             ))
+            
+            logger.info(f"Row {row_id}: Final result - extracted_data: {extracted_data}, errors: {errors}")
             
             # Call progress callback
             if progress_callback:
@@ -218,7 +233,8 @@ class ExtractionService:
                     current_row_id=row_id
                 )
 
-        return [
+        logger.info(f"Extraction complete. Total results: {len(results)}")
+        final_results = [
             {
                 "row_id": r.row_id,
                 "extracted_data": r.extracted_data,
@@ -226,3 +242,5 @@ class ExtractionService:
             }
             for r in results
         ]
+        logger.info(f"Final results to store: {final_results}")
+        return final_results

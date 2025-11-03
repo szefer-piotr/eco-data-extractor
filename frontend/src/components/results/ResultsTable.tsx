@@ -45,6 +45,27 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const [searchFilter, setSearchFilter] = useState('');
 
+  // Derive column names from actual data if available, otherwise use provided categoryNames
+  const dynamicColumnNames = useMemo(() => {
+    const results = (data.results || data.data || []) as Record<string, unknown>[];
+    
+    if (results.length === 0) {
+      return categoryNames;
+    }
+
+    // Extract unique keys from extracted_data across all results
+    const columnSet = new Set<string>();
+    results.forEach((row: any) => {
+      if (row.extracted_data && typeof row.extracted_data === 'object') {
+        Object.keys(row.extracted_data).forEach(key => {
+          columnSet.add(key);
+        });
+      }
+    });
+
+    return Array.from(columnSet);
+  }, [data.results, data.data, categoryNames]);
+
   // Build error map for quick lookup
   const errorMap = useMemo(() => {
     const map = new Map<number, string>();
@@ -58,12 +79,19 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
 
   // Filter and sort data
   const processedData = useMemo(() => {
-    let filtered = data.data;
+    // Use results field first (from backend), fallback to data field (for backward compatibility)
+    let filtered = (data.results || data.data || []) as Record<string, unknown>[];
+
+    // Normalize data structure: backend uses row_id, we need _id for consistency
+    filtered = filtered.map((row: any) => ({
+      ...row,
+      _id: row._id || row.id || row.row_id || '',
+    }));
 
     // Apply search filter
     if (searchFilter) {
       filtered = filtered.filter((row: any) => {
-        const rowId = String(row._id || row.id || '');
+        const rowId = String(row._id || '');
         return rowId.includes(searchFilter);
       });
     }
@@ -83,7 +111,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
     });
 
     return sorted;
-  }, [data.data, order, orderBy, searchFilter]);
+  }, [data.results, data.data, order, orderBy, searchFilter]);
 
   // Paginate data
   const paginatedData = useMemo(() => {
@@ -189,7 +217,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
               </TableCell>
 
               {/* Category Columns */}
-              {categoryNames.map((category) => (
+              {dynamicColumnNames.map((category) => (
                 <TableCell
                   key={category}
                   sortDirection={orderBy === category ? order : false}
@@ -271,7 +299,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
                     </TableCell>
 
                     {/* Category Data */}
-                    {categoryNames.map((category) => (
+                    {dynamicColumnNames.map((category) => (
                       <TableCell
                         key={category}
                         sx={{
@@ -289,7 +317,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
                             whiteSpace: 'nowrap',
                           }}
                         >
-                          {String(row[category] || '-')}
+                          {String((row.extracted_data as Record<string, any>)?.[category] || '-')}
                         </Typography>
                       </TableCell>
                     ))}
@@ -317,7 +345,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
                   {/* Expanded Row Details */}
                   <TableRow>
                     <TableCell
-                      colSpan={categoryNames.length + 3}
+                      colSpan={dynamicColumnNames.length + 3}
                       sx={{ paddingBottom: 0, paddingTop: 0 }}
                     >
                       <Collapse in={isExpanded} timeout="auto" unmountOnExit>

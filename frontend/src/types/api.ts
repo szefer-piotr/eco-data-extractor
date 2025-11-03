@@ -19,7 +19,15 @@ export interface JobStatus {
 
 export interface ExtractionResult {
   job_id: string;
-  data: Record<string, unknown>[];
+  status?: string;
+  total_rows?: number;
+  processed_rows?: number;
+  progress_percent?: number;
+  categories?: Array<{ name: string; prompt: string }>;
+  provider?: string;
+  model?: string;
+  results?: Record<string, unknown>[];
+  data?: Record<string, unknown>[]; // For backward compatibility
   errors?: Array<{
     row_id: number;
     error: string;

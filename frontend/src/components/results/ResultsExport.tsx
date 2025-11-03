@@ -95,14 +95,22 @@ const ResultsExport: React.FC<ResultsExportProps> = ({
       const header = columnArray.join(',');
 
       // Create rows
-      const rows = data.data.map((row: any, index: number) => {
+      const rows = (data.results || data.data || []).map((row: any, index: number) => {
         return columnArray
           .map((col) => {
             if (col === '_error') {
               return errorMap.has(index) ? `"${errorMap.get(index)}"` : '';
             }
-            const value = row[col] || '';
-            // Escape quotes and wrap in quotes if contains comma or newline
+            if (col === '_id') {
+              const value = row._id || row.id || row.row_id || '';
+              const stringValue = String(value);
+              if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+                return `"${stringValue.replace(/"/g, '""')}"`;
+              }
+              return stringValue;
+            }
+            // For category columns, access from extracted_data
+            const value = (row.extracted_data as Record<string, any>)?.[col] || '';
             const stringValue = String(value);
             if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
               return `"${stringValue.replace(/"/g, '""')}"`;
@@ -128,15 +136,18 @@ const ResultsExport: React.FC<ResultsExportProps> = ({
     try {
       const columnArray = Array.from(selectedColumns);
 
-      const jsonData = data.data.map((row: any, index: number) => {
+      const jsonData = (data.results || data.data || []).map((row: any, index: number) => {
         const obj: Record<string, any> = {};
         columnArray.forEach((col) => {
           if (col === '_error') {
             if (errorMap.has(index)) {
               obj[col] = errorMap.get(index);
             }
+          } else if (col === '_id') {
+            obj[col] = row._id || row.id || row.row_id || null;
           } else {
-            obj[col] = row[col] || null;
+            // For category columns, access from extracted_data
+            obj[col] = (row.extracted_data as Record<string, any>)?.[col] || null;
           }
         });
         return obj;
@@ -260,7 +271,7 @@ const ResultsExport: React.FC<ResultsExportProps> = ({
 
             {/* Summary */}
             <Alert severity="info">
-              Exporting {data.data.length} rows with {selectedColumns.size} columns
+              Exporting {(data.results || data.data || []).length} rows with {selectedColumns.size} columns
             </Alert>
           </Stack>
         </DialogContent>

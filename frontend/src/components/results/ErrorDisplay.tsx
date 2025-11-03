@@ -118,7 +118,7 @@ const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
     }
   };
 
-  const failedRows = data.data.filter((row: any, index: number) =>
+  const failedRows = (data.results || data.data || []).filter((row: any, index: number) =>
     data.errors!.some((err) => err.row_id === index)
   );
 

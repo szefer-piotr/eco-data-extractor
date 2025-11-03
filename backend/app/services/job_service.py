@@ -156,6 +156,8 @@ class JobProcessor:
                 progress_callback=progress_callback
             )
 
+            logger.info(f"Process extraction returned {len(results)} results")
+            logger.info(f"Results content: {results}")
             DataStorageService.store_job_results(job_id, results)
             logger.info(f"Stored results for job {job_id}")
 

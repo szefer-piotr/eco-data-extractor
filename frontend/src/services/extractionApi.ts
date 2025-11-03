@@ -2,12 +2,27 @@ import api from './api';
 import { JobStatus, ExtractionResult } from '@api-types/api';
 
 export const extractionApi = {
-  uploadCSV: async (file: File, idColumn: string, textColumn: string, categories: Record<string, string>) => {
+  uploadCSV: async (
+    file: File, 
+    idColumn: string, 
+    textColumn: string, 
+    categories: Record<string, string>,
+    provider: string,
+    model: string,
+    apiKey: string
+  ) => {
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('id_column', idColumn);
-    formData.append('text_column', textColumn);
-    formData.append('categories', JSON.stringify(categories));
+    
+    // Convert categories Record to array of CategoryField objects
+    const categoriesArray = Object.entries(categories).map(([name, prompt]) => ({
+      name,
+      prompt,
+    }));
+    formData.append('categories_json', JSON.stringify(categoriesArray));
+    formData.append('provider', provider);
+    formData.append('model', model);
+    formData.append('api_key', apiKey);
 
     const response = await api.post('/upload/csv', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
@@ -15,10 +30,25 @@ export const extractionApi = {
     return response.data;
   },
 
-  uploadPDF: async (files: File[], categories: Record<string, string>) => {
+  uploadPDF: async (
+    files: File[], 
+    categories: Record<string, string>,
+    provider: string,
+    model: string,
+    apiKey: string
+  ) => {
     const formData = new FormData();
     files.forEach(file => formData.append('files', file));
-    formData.append('categories', JSON.stringify(categories));
+    
+    // Convert categories Record to array of CategoryField objects
+    const categoriesArray = Object.entries(categories).map(([name, prompt]) => ({
+      name,
+      prompt,
+    }));
+    formData.append('categories_json', JSON.stringify(categoriesArray));
+    formData.append('provider', provider);
+    formData.append('model', model);
+    formData.append('api_key', apiKey);
 
     const response = await api.post('/upload/pdf', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },

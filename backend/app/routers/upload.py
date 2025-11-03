@@ -23,6 +23,7 @@ async def upload_csv(
     categories_json: str = Form(...),
     provider: str = Form(...),
     model: str = Form(...),
+    api_key: str = Form(...),
     background_tasks: BackgroundTasks = None
 ):
     """
@@ -64,7 +65,7 @@ async def upload_csv(
             categories=categories,
             provider=provider,
             model=model,
-            api_key=settings.OPENAI_API_KEY
+            api_key=api_key
         )
     
         return {
@@ -84,6 +85,7 @@ async def upload_pdf(
     categories_json: str = Form(...),
     provider: str = Form(...),
     model: str = Form(...),
+    api_key: str = Form(...),
     background_tasks: BackgroundTasks = None
 ):
     """
@@ -135,7 +137,7 @@ async def upload_pdf(
             categories=categories,
             provider=provider,
             model=model,
-            api_key=settings.OPENAI_API_KEY
+            api_key=api_key
         )
 
         return {
