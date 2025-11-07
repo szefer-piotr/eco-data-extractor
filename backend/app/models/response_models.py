@@ -1,6 +1,8 @@
 """Response models for API endpoints"""
 
-from typing import List, Optional, Dict, Any
+from multiprocessing import Value
+from token import OP
+from typing import List, Optional, Dict, Any, Tuple
 from pydantic import BaseModel, Field
 from enum import Enum
 from datetime import datetime
@@ -13,10 +15,17 @@ class ExtractionStatus(str, Enum):
     FAILED = "failed"
     CANCELLED = "cancelled"
 
+class CategoryExtraction(BaseModel):
+    value: Optional[str] = Field(default=None, description="Extracted value or null if not found")
+    sentence_numbers: List[int] = Field(default_factory=list, description="1-based indices of supporting sentences")
+    span_offset: Optional[List[Tuple[int, int]]] = Field(default=None, description="Optional character spans in full text")
+    confidence: Optional[float] = Field(default=None, ge=0, le=1)
+    rationale: Optional[str] = Field(default=None, description="Optional brief reason/citation note")
+
 class ExtractionResultItem(BaseModel):
     """Single extraction result"""
     row_id: str = Field(..., description="Row identifier from input data")
-    extracted_data: Dict[str, Any] = Field(..., description="Extracted categories and values")
+    extracted_data: Dict[str, CategoryExtraction] = Field(..., description="Extracted categories and values")
     confidence: float = Field(default=1.0, ge=0, le=1)
     errors: Optional[List[str]] = Field(default=None, description="Any extraction errors")
 
