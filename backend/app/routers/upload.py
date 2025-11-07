@@ -1,7 +1,7 @@
 """File upload endpoints"""
 
 from fastapi import APIRouter, UploadFile, File, HTTPException, Form, BackgroundTasks
-from typing import List
+from typing import List, Text
 import io
 import logging
 import pandas as pd
@@ -13,6 +13,7 @@ from app.services.job_service import JobManager, JobProcessor
 from app.services.data_storage_service import DataStorageService
 from app.models.request_models import CategoryField
 from app.config import settings
+from app.utils.text import TextProcessor
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -41,7 +42,20 @@ async def upload_csv(
         
         id_col = 'id' if 'id' in df.columns else df.columns[0]
         text_col = 'abstract' if 'abstract' in df.columns else 'text' if 'text' in df.columns else df.columns[1]
+        
         rows = CSVService.extract_rows(df, id_col, text_col)
+
+        enriched_rows = []
+        for row in rows:
+            text = row.get("text", "")
+            sentences = TextProcessor.split_sentences(text)
+            sentence_offsets = TextProcessor.get_sentence_offsets(text, sentences)
+
+        enriched_rows.append({
+            **row,
+            "sentences": sentences,
+            "sentence_offsets": sentence_offsets
+        })
 
         job_id = JobManager.create_job(
             categories=categories,
@@ -50,7 +64,7 @@ async def upload_csv(
             rows=len(rows)
         )
 
-        DataStorageService.store_job_rows(job_id, rows)
+        DataStorageService.store_job_rows(job_id, enriched_rows)
 
         DataStorageService.store_file_metadata(
             file_id=job_id,
@@ -101,17 +115,21 @@ async def upload_pdf(
         rows = []
         for idx, file in enumerate(files):
             pdf_content = await file.read()
-
             is_valid, error = PDFService.validate_pdf(pdf_content)
             if not is_valid:
                 raise HTTPException(status_code=400, detail=f"{file.filename}: {error}")
 
             text = PDFService.extract_text(pdf_content)
 
+            sentences = TextProcessor.split_sentences(text)
+            sentence_offsets = TextProcessor.get_sentence_offsets(text, sentences)
+
             rows.append({
                 "id": f"pdf_{idx}_{file.filename}",
                 "text": text,
-                "source": file.filename
+                "source": file.filename,
+                "sentences": sentences,
+                "sentence_offsets": sentence_offsets
             })
 
         job_id = JobManager.create_job(
