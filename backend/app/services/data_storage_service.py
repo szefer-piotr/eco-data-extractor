@@ -4,6 +4,14 @@ import json
 from pathlib import Path
 from typing import List, Dict, Optional
 from datetime import datetime, timezone
+from pydantic import BaseModel
+
+class PydanticEncoder(json.JSONEncoder):
+    """Custom JSON encoder for Pydantic models"""
+    def default(self, obj):
+        if isinstance(obj, BaseModel):
+            return obj.model_dump()
+        return super().default(obj)
 
 class DataStorageService:
     
@@ -35,7 +43,7 @@ class DataStorageService:
         results_file = job_dir / "results.json"
 
         with open(results_file, "w") as f:
-            json.dump(results, f, indent=2)
+            json.dump(results, f, indent=2, cls=PydanticEncoder)
         return True
 
     @staticmethod
@@ -53,7 +61,7 @@ class DataStorageService:
     def cleanup_job(job_id: str) -> bool:
         """Delete all data for a completed job"""
         import shutil
-        job_dir = DataStorageService.STORAGE_DIR / job_dir
+        job_dir = DataStorageService.STORAGE_DIR / job_id
         if job_dir.exists():
             shutil.rmtree(job_dir)
         return True

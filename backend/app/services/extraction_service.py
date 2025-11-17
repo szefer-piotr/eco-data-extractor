@@ -8,7 +8,7 @@ import uuid
 from datetime import datetime
 
 from app.models.request_models import CategoryField, ExtractionRequest
-from app.models.response_models import ExtractionResultItem, ExtractionResult, ExtractionStatus
+from app.models.response_models import ExtractionResultItem, ExtractionResult, ExtractionStatus, CategoryExtraction
 from app.services.llm_providers import get_provider
 from app.config import settings
 
@@ -217,9 +217,18 @@ class ExtractionService:
             
             errors.extend(validation_errors)
             
+            # Convert extracted data to CategoryExtraction objects
+            category_extraction_data = {}
+            for key, value in extracted_data.items():
+                category_extraction_data[key] = CategoryExtraction(
+                    value=value if value else None,
+                    sentence_numbers=[],
+                    confidence=0.9 if value else 0.0
+                )
+            
             results.append(ExtractionResultItem(
                 row_id=row_id,
-                extracted_data=extracted_data,
+                extracted_data=category_extraction_data,  # ← Use the converted data
                 errors=errors if errors else None
             ))
             

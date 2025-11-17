@@ -6,7 +6,8 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: ecodata-backend
-    network_mode: host
+    ports:
+      - "8000:8000"
     env_file:
       - ./backend/.env
     environment:
@@ -18,15 +19,26 @@ services:
       - ./backend/logs:/app/logs
       - ./backend/uploads:/app/uploads
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    networks:
+      - ecodata-network
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: ecodata-frontend
-    network_mode: host
+    ports:
+      - "3000:3000"
     environment:
-      - VITE_API_URL=https://ecodataextractor.byst.re/api
-      - VITE_WS_URL=wss://ecodataextractor.byst.re
+      # - VITE_API_URL=https://ecodataextractor.byst.re/api
+      # - VITE_WS_URL=wss://ecodataextractor.byst.re
+      - VITE_API_URL=http://backend:8000/api
+      - VITE_WS_URL=ws://backend:8000
     depends_on:
       - backend
+    networks:
+      - ecodata-network
+
+networks:
+  ecodata-network:
+    driver: bridge

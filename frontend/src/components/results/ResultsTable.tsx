@@ -317,7 +317,14 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
                             whiteSpace: 'nowrap',
                           }}
                         >
-                          {String((row.extracted_data as Record<string, any>)?.[category] || '-')}
+                          {/* {String((row.extracted_data as Record<string, any>)?.[category] || '-')} */}
+                          {(() => {
+                            const cellData = (row.extracted_data as Record<string, any>)?.[category];
+                            if (cellData && typeof cellData == 'object' && 'value' in cellData) {
+                              return String(cellData.value || '-');
+                            }
+                            return String(cellData || '-');
+                          })()}
                         </Typography>
                       </TableCell>
                     ))}
