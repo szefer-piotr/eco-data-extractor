@@ -320,9 +320,21 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
                           {/* {String((row.extracted_data as Record<string, any>)?.[category] || '-')} */}
                           {(() => {
                             const cellData = (row.extracted_data as Record<string, any>)?.[category];
-                            if (cellData && typeof cellData == 'object' && 'value' in cellData) {
-                              return String(cellData.value || '-');
+                            
+                            if (cellData && typeof cellData === 'object' && 'value' in cellData) {
+                              const { value, confidence } = cellData;
+                              return (
+                                <Stack spacing={0.5}>
+                                  <Typography variant="body2">{String(value || '-')}</Typography>
+                                  {confidence !== undefined && (
+                                    <Typography variant="caption" color="textSecondary">
+                                      Confidence: {(confidence * 100).toFixed(0)}%
+                                    </Typography>
+                                  )}
+                                </Stack>
+                              );
                             }
+                            
                             return String(cellData || '-');
                           })()}
                         </Typography>
