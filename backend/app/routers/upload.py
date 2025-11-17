@@ -51,11 +51,11 @@ async def upload_csv(
             sentences = TextProcessor.split_sentences(text)
             sentence_offsets = TextProcessor.get_sentence_offsets(text, sentences)
 
-        enriched_rows.append({
-            **row,
-            "sentences": sentences,
-            "sentence_offsets": sentence_offsets
-        })
+            enriched_rows.append({
+                **row,
+                "sentences": sentences,
+                "sentence_offsets": sentence_offsets
+            })
 
         job_id = JobManager.create_job(
             categories=categories,
