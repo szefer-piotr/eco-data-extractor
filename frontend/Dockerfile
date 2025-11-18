@@ -11,6 +11,12 @@ RUN npm ci
 # Copy source code
 COPY . .
 
+# Accept build arguments
+ARG VITE_API_URL=http://backend:8000/api
+ARG VITE_WS_URL=ws://backend:8000
+ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_WS_URL=$VITE_WS_URL
+
 # Build application
 RUN npm run build
 
