@@ -66,12 +66,13 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:                                          # ← Add this section
+        - VITE_API_URL=https://ecodataextractor.byst.re/api
+        - VITE_WS_URL=wss://ecodataextractor.byst.re
     container_name: ecodata-frontend
     network_mode: host
     environment:
       - VITE_API_URL=https://ecodataextractor.byst.re/api
       - VITE_WS_URL=wss://ecodataextractor.byst.re
-      # - VITE_API_URL=http://backend:8000/api
-      # - VITE_WS_URL=ws://backend:8000
     depends_on:
       - backend
