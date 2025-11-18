@@ -9,8 +9,9 @@ export interface ApiResponse<T> {
 export interface JobStatus {
   job_id: string;
   status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
-  progress: number;
-  rows_processed: number;
+  progress_percent: number;
+  processed_rows: number;
+  rows_processed?: number;
   total_rows: number;
   error?: string;
   created_at: string;

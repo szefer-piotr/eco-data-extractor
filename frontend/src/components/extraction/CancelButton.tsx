@@ -118,7 +118,7 @@ const CancelButton: React.FC<CancelButtonProps> = ({
             <Alert severity="info" sx={{ mb: 2 }}>
               Current Status: <strong>{jobStatus.status}</strong>
               <br />
-              Progress: <strong>{jobStatus.rows_processed} / {jobStatus.total_rows}</strong> rows
+              Progress: <strong>{jobStatus.processed_rows} / {jobStatus.total_rows}</strong> rows
             </Alert>
           )}
 

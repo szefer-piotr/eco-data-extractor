@@ -1,10 +1,13 @@
 """File upload endpoints"""
 
+from codecs import charmap_decode
+from csv import excel_tab
 from fastapi import APIRouter, UploadFile, File, HTTPException, Form, BackgroundTasks
 from typing import List, Text
 import io
 import logging
 import pandas as pd
+import chardet
 
 from app.routers import status
 from app.services.csv_service import CSVService
@@ -37,7 +40,18 @@ async def upload_csv(
     try: 
         categories = [CategoryField(**c) for c in json.loads(categories_json)]
         csv_bytes = await file.read()
-        csv_text = csv_bytes.decode('utf-8')
+
+        detected = chardet.detect(csv_bytes)
+        encoding = detected.get('encoding', 'utf-8')
+
+        logger.info(f"Detected file encodig: {encoding} (confidence: {detected.get('confidence', 0):.2%})")
+
+        try:
+            csv_text = csv_bytes.decode(encoding)
+        except (UnicodeDecodeError, LookupError):
+            logger.warning(f"Failed to decode with {encoding}, trying UTF-8 with error handling")
+            csv_text = csv_bytes.decode('utf-8', errors='replace')
+
         df = CSVService.load_csv(csv_text)
         
         id_col = 'id' if 'id' in df.columns else df.columns[0]
@@ -90,6 +104,7 @@ async def upload_csv(
         }
 
     except Exception as e:
+        logger.error(f"CSV upload error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 

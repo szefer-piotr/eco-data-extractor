@@ -33,7 +33,10 @@ def get_status(job_id: str):
         "status": job["status"].value,
         "progress_percent": job["progress_percent"],
         "processed_rows": job["processed_rows"],
+        "rows_processed": job["processed_rows"],  # Alias for backward compatibility
         "total_rows": job["total_rows"],
+        "created_at": job["created_at"].isoformat() if job.get("created_at") else None,
+        "updated_at": job["completed_at"].isoformat() if job.get("completed_at") else None,
     }
 
 

@@ -96,8 +96,8 @@ const ProcessingStatus: React.FC<ProcessingStatusProps> = ({
     if (!startTime) return null;
 
     const elapsed = (new Date().getTime() - startTime.getTime()) / 1000; // seconds
-    const progressRate = jobStatus.rows_processed / elapsed;
-    const remainingRows = jobStatus.total_rows - jobStatus.rows_processed;
+    const progressRate = jobStatus.processed_rows / elapsed;
+    const remainingRows = jobStatus.total_rows - jobStatus.processed_rows;
     const remainingSeconds = Math.ceil(remainingRows / progressRate);
 
     if (remainingSeconds < 60) {
@@ -153,7 +153,7 @@ const ProcessingStatus: React.FC<ProcessingStatusProps> = ({
 
   const { icon, color } = getStatusIconAndColor(jobStatus.status);
   const progressPercent = jobStatus.total_rows > 0
-    ? (jobStatus.rows_processed / jobStatus.total_rows) * 100
+    ? (jobStatus.processed_rows / jobStatus.total_rows) * 100
     : 0;
 
   return (
@@ -208,14 +208,14 @@ const ProcessingStatus: React.FC<ProcessingStatusProps> = ({
                 <Box display="flex" justifyContent="space-between">
                   <Typography variant="body2">Rows Processed:</Typography>
                   <Typography variant="body2" fontWeight={600}>
-                    {jobStatus.rows_processed} / {jobStatus.total_rows}
+                    {jobStatus.processed_rows} / {jobStatus.total_rows}
                   </Typography>
                 </Box>
-                {jobStatus.rows_processed > 0 && (
+                {jobStatus.processed_rows > 0 && (
                   <Box display="flex" justifyContent="space-between">
                     <Typography variant="body2">Current Row:</Typography>
                     <Typography variant="body2" fontWeight={600}>
-                      Row #{jobStatus.rows_processed}
+                      Row #{jobStatus.processed_rows}
                     </Typography>
                   </Box>
                 )}
@@ -270,7 +270,7 @@ const ProcessingStatus: React.FC<ProcessingStatusProps> = ({
                     Created:
                   </Typography>
                   <Typography variant="caption">
-                    {new Date(jobStatus.created_at).toLocaleString()}
+                    {jobStatus.created_at ? new Date(jobStatus.created_at).toLocaleString() : 'N/A'}
                   </Typography>
                 </Box>
                 <Box display="flex" justifyContent="space-between">
@@ -278,7 +278,7 @@ const ProcessingStatus: React.FC<ProcessingStatusProps> = ({
                     Last Updated:
                   </Typography>
                   <Typography variant="caption">
-                    {new Date(jobStatus.updated_at).toLocaleString()}
+                    {jobStatus.updated_at ? new Date(jobStatus.updated_at).toLocaleString() : 'N/A'}
                   </Typography>
                 </Box>
               </Stack>
