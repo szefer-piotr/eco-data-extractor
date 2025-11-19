@@ -62,6 +62,8 @@ services:
 networks:
   ecodata-network:
     driver: bridge
+    enable_ipv4: false
+    enable_ipv6: true
 
 # services:
 #   backend:
