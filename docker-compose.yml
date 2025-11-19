@@ -24,7 +24,7 @@ services:
     # cap_add:
     #   - NET_BIND_SERVICE
     networks:
-      - my-bridge-network
+      - ecodata-network
     # healthcheck:
     #   test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
     #   interval: 30s
@@ -59,9 +59,9 @@ services:
     #   timeout: 10s
     #   retries: 3
 
-# networks:
-#   ecodata-network:
-#     driver: bridge
+networks:
+  ecodata-network:
+    driver: bridge
 
 # services:
 #   backend:
