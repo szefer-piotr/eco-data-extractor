@@ -1,55 +1,9 @@
-# version: '3.8'
-
-# services:
-#   backend:
-#     build:
-#       context: ./backend
-#       dockerfile: Dockerfile
-#     container_name: ecodata-backend
-#     ports:
-#       - "8000:8000"
-#     env_file:
-#       - ./backend/.env
-#     environment:
-#       - ENVIRONMENT=development
-#       - DEBUG=True
-#       - DATABASE_URL=sqlite:///./ecodata.db
-#     volumes:
-#       - ./backend/app:/app/app
-#       - ./backend/logs:/app/logs
-#       - ./backend/uploads:/app/uploads
-#     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-#     networks:
-#       - ecodata-network
-
-#   frontend:
-#     build:
-#       context: ./frontend
-#       dockerfile: Dockerfile
-#     container_name: ecodata-frontend
-#     ports:
-#       - "3000:3000"
-#     environment:
-#       # - VITE_API_URL=https://ecodataextractor.byst.re/api
-#       # - VITE_WS_URL=wss://ecodataextractor.byst.re
-#       - VITE_API_URL=http://backend:8000/api
-#       - VITE_WS_URL=ws://backend:8000
-#     depends_on:
-#       - backend
-#     networks:
-#       - ecodata-network
-
-# networks:
-#   ecodata-network:
-#     driver: bridge
-
 services:
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: ecodata-backend
-    network_mode: host
     env_file:
       - ./backend/.env
     environment:
@@ -61,18 +15,76 @@ services:
       - ./backend/logs:/app/logs
       - ./backend/uploads:/app/uploads
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    ports:
+      - "8000:8000"
+    expose:
+      - 8000
+    networks:
+      - ecodata-network
+    # healthcheck:
+    #   test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 3
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-      args:                                          # ← Add this section
-        - VITE_API_URL=http://localhost:8000/api
-        - VITE_WS_URL=ws://localhost:8000
+      args:
+        # Use container name for internal communication
+        - VITE_API_URL=http://ecodata-backend:8000/api
+        - VITE_WS_URL=ws://ecodata-backend:8000/ws
     container_name: ecodata-frontend
-    network_mode: host
-    environment:
-      - VITE_API_URL=http://localhost:8000/api
-      - VITE_WS_URL=ws://localhost:8000
+    ports:
+      - "3000:3000"
+    expose:
+      - 3000
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
+    networks:
+      - ecodata-network
+    # healthcheck:
+    #   test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000"]
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 3
+
+networks:
+  ecodata-network:
+    driver: bridge
+
+# services:
+#   backend:
+#     build:
+#       context: ./backend
+#       dockerfile: Dockerfile
+#     container_name: ecodata-backend
+#     network_mode: host
+#     env_file:
+#       - ./backend/.env
+#     environment:
+#       - ENVIRONMENT=development
+#       - DEBUG=True
+#       - DATABASE_URL=sqlite:///./ecodata.db
+#     volumes:
+#       - ./backend/app:/app/app
+#       - ./backend/logs:/app/logs
+#       - ./backend/uploads:/app/uploads
+#     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+#   frontend:
+#     build:
+#       context: ./frontend
+#       dockerfile: Dockerfile
+#       args:                                          # ← Add this section
+#         - VITE_API_URL=http://localhost:8000/api
+#         - VITE_WS_URL=ws://localhost:8000
+#     container_name: ecodata-frontend
+#     network_mode: host
+#     environment:
+#       - VITE_API_URL=http://localhost:8000/api
+#       - VITE_WS_URL=ws://localhost:8000
+#     depends_on:
+#       - backend

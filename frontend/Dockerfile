@@ -12,8 +12,8 @@ RUN npm ci
 COPY . .
 
 # Accept build arguments
-ARG VITE_API_URL=http://backend:8000/api
-ARG VITE_WS_URL=ws://backend:8000
+ARG VITE_API_URL=http://localhost:8000/api
+ARG VITE_WS_URL=ws://localhost:8000/ws
 ENV VITE_API_URL=$VITE_API_URL
 ENV VITE_WS_URL=$VITE_WS_URL
 
