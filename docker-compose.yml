@@ -37,8 +37,8 @@ services:
       dockerfile: Dockerfile
       args:
         # Use container name for internal communication
-        - VITE_API_URL=http://ecodata-backend:8000/api
-        - VITE_WS_URL=ws://ecodata-backend:8000/ws
+        - VITE_API_URL=https://ecodata-backend:8000/api
+        - VITE_WS_URL=wss://ecodata-backend:8000/ws
     container_name: ecodata-frontend
     ports:
       - "3000:3000"
