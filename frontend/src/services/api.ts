@@ -1,6 +1,8 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse } from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://ecodataextractor.byst.re/api';
+// For local development with Docker Compose: http://ecodata-backend:8000/api
+// For production on remote VM: https://ecodataextractor.byst.re/api
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
 const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,

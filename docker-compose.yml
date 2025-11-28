@@ -1,100 +1,56 @@
+version: '3.8'
+
 services:
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: ecodata-backend
-    env_file:
-      - ./backend/.env
     environment:
-      - ENVIRONMENT=development
-      - DEBUG=True
-      - DATABASE_URL=sqlite:///./ecodata.db
+      - ENVIRONMENT=production
+      - DEBUG=False
     volumes:
       - ./backend/app:/app/app
       - ./backend/logs:/app/logs
       - ./backend/uploads:/app/uploads
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-    ports:
-      - "8000:8000"
-    expose:
-      - 8000
-    # security_opt:   
-    #   - "apparmor=unconfined"
-    # cap_add:
-    #   - NET_BIND_SERVICE
     networks:
       - ecodata-network
-    # healthcheck:
-    #   test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-    #   interval: 30s
-    #   timeout: 10s
-    #   retries: 3
+    # Backend only accessible from nginx
+    expose:
+      - 8000
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        # Use container name for internal communication
-        - VITE_API_URL=https://ecodata-backend:8000/api
-        - VITE_WS_URL=wss://ecodata-backend:8000/ws
+        - VITE_API_URL=https://ecodataextractor.byst.re/api
+        - VITE_WS_URL=wss://ecodataextractor.byst.re/ws
     container_name: ecodata-frontend
-    ports:
-      - "3000:3000"
-    expose:
-      - 3000
-    depends_on:
-      backend:
-        condition: service_healthy
-  #   security_opt:
-  #     - "apparmor=unconfined"
-  #   cap_add:
-  #     - NET_BIND_SERVICE
     networks:
       - ecodata-network
-    # healthcheck:
-    #   test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000"]
-    #   interval: 30s
-    #   timeout: 10s
-    #   retries: 3
+    # Frontend only accessible from nginx
+    expose:
+      - 3000
+
+  nginx:
+    image: nginx:alpine
+    container_name: ecodata-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # Nginx configuration
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      # SSL Certificates from Let's Encrypt
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - ecodata-network
+    restart: unless-stopped
 
 networks:
   ecodata-network:
     driver: bridge
-    # enable_ipv4: false
-    # enable_ipv6: true
-
-# services:
-#   backend:
-#     build:
-#       context: ./backend
-#       dockerfile: Dockerfile
-#     container_name: ecodata-backend
-#     network_mode: host
-#     env_file:
-#       - ./backend/.env
-#     environment:
-#       - ENVIRONMENT=development
-#       - DEBUG=True
-#       - DATABASE_URL=sqlite:///./ecodata.db
-#     volumes:
-#       - ./backend/app:/app/app
-#       - ./backend/logs:/app/logs
-#       - ./backend/uploads:/app/uploads
-#     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-
-#   frontend:
-#     build:
-#       context: ./frontend
-#       dockerfile: Dockerfile
-#       args:                                          # ← Add this section
-#         - VITE_API_URL=http://localhost:8000/api
-#         - VITE_WS_URL=ws://localhost:8000
-#     container_name: ecodata-frontend
-#     network_mode: host
-#     environment:
-#       - VITE_API_URL=http://localhost:8000/api
-#       - VITE_WS_URL=ws://localhost:8000
-#     depends_on:
-#       - backend
