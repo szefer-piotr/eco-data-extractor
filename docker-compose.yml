@@ -24,8 +24,8 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        - VITE_API_URL=https://www.ecodata.pl/api
-        - VITE_WS_URL=wss://www.ecodata.pl/ws
+        - VITE_API_URL=/api
+        - VITE_WS_URL=/ws
     container_name: ecodata-frontend
     networks:
       - ecodata-network
