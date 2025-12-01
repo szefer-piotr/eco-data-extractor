@@ -51,3 +51,7 @@ ecodata.db
 # Other
 tinter_app
 refactoring_plan
+
+# Docker and deployment cofiguration (local/production specific)
+docker-compose.yml
+nginx/
