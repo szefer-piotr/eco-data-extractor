@@ -58,7 +58,7 @@ const ResultsViewer: React.FC<ResultsViewerProps> = ({ jobId: propJobId }) => {
   const { jobId: storeJobId, categories } = useExtractionStore();
   const { addNotification } = useUIStore();
 
-  const effectiveJobId = propJobId || storeJobId;
+  const effectiveJobId = propJobId || storeJobId || undefined;
 
   useEffect(() => {
     const fetchResults = async () => {
@@ -153,6 +153,8 @@ const ResultsViewer: React.FC<ResultsViewerProps> = ({ jobId: propJobId }) => {
           <ResultsTable
             data={results}
             categoryNames={categoryNames}
+            showValidation={true}
+            jobId={effectiveJobId}
           />
         </TabPanel>
 

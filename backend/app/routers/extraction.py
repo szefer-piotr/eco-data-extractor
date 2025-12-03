@@ -1,12 +1,15 @@
 """Extraction API endpoints"""
+from json import detect_encoding
 import logging
 from signal import default_int_handler
 from unittest import result
 from app.models.request_models import CategoryField, ExtractionRequest
-from app.models.response_models import ExtractionStatus
+from app.models.response_models import ExtractionFeedback, ExtractionStatus
 from app.routers import status
 from app.services.data_storage_service import DataStorageService
 from app.services.extraction_service import ExtractionService
+from app.services.text_processing_service import TextProcessingService
+from app.services.validation_service import ValidationService
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 
 from app.services.job_service import JobManager
@@ -15,7 +18,64 @@ import pandas as pd
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+validation_service = ValidationService()
 
+@router.post("/validate-extraction/{job_id}")
+async def validate_extraction(
+    job_id: str,
+    feedback: List[ExtractionFeedback]
+) -> Dict[str, Any]:
+    """
+    Accept user validation feedback for an extraction job.
+
+    Args:
+        job_id: Job ID
+        feedback: List of validation feedback
+
+    Returns:
+        Confirmation of saved feedback
+    """
+    try:
+        feedback_list = [f.model_dump() for i in feedback]
+        for row_feedback in feedback_list:
+            validation_service.save_user_feedback(
+                job_id,
+                row_feedback.get("row_id"),
+                [row_feedback]
+            )
+
+        return {
+            "status": "success",
+            "message": f"Saved feedback for {len(feedback_list)} items",
+            "job_id": job_id
+        }
+
+    except Exception as e:
+        logger.error(f"Error validating extraction {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/extraction-feedback/{job_id}")
+async def get_extraction_feedback(job_id: str) -> Dict[str, Any]:
+    """
+    Retrieve all validation feedback for a job.
+
+    Args:
+        job_id: Job ID
+
+    Returns:
+        Feedback data
+    """
+    try:
+        feedback = validation_service.get_feedback_for_job(job_id)
+        return {
+            "job_id": job_id,
+            "feedback_items": feedback,
+            "total_feedback": len(feedback)
+        }
+    
+    except Exception as e:
+        logger.error(f"Error retrieving feedback: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/status/{job_id}")
 def get_status(job_id: str):

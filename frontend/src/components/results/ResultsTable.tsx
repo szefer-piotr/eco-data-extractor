@@ -18,17 +18,36 @@ import {
   Chip,
   TextField,
   InputAdornment,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  Alert,
 } from '@mui/material';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import SearchIcon from '@mui/icons-material/Search';
 import WarningIcon from '@mui/icons-material/Warning';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ValidationIcon from '@mui/icons-material/VerifiedUser';
 import { ExtractionResult } from '@api-types/api';
+import { ExtractionValidation, ValidationProps, CategoryExtraction } from '../validation/ExtractionValidation';
+
+interface ValidationFeedback {
+  row_id: string;
+  category: string;
+  validation_status: 'confirmed' | 'rejected' | 'override';
+  user_validated_sentences: number[];
+  manual_value?: string;
+  notes?: string;
+}
 
 interface ResultsTableProps {
   data: ExtractionResult;
   categoryNames: string[];
   onRowClick?: (rowIndex: number) => void;
+  showValidation?: boolean;
+  jobId?: string;
 }
 
 type Order = 'asc' | 'desc';
@@ -37,6 +56,8 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
   data,
   categoryNames,
   onRowClick,
+  showValidation = false,
+  jobId,
 }) => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -44,6 +65,12 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
   const [orderBy, setOrderBy] = useState<string>('_id');
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const [searchFilter, setSearchFilter] = useState('');
+  
+  // Validation mode state
+  const [validationMode, setValidationMode] = useState(false);
+  const [currentRowForValidation, setCurrentRowForValidation] = useState<number | null>(null);
+  const [submittingFeedback, setSubmittingFeedback] = useState(false);
+  const [feedbackMessage, setFeedbackMessage] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // Derive column names from actual data if available, otherwise use provided categoryNames
   const dynamicColumnNames = useMemo(() => {
@@ -156,8 +183,146 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
     return errorMap.has(rowIndex);
   };
 
+  const handleValidationComplete = async (feedback: ValidationFeedback[]) => {
+    if (!jobId) {
+      setFeedbackMessage({ type: 'error', message: 'Job ID not available' });
+      return;
+    }
+
+    setSubmittingFeedback(true);
+    try {
+      // TODO: Replace with actual API call when validation endpoints are ready
+      console.log('Submitting validation feedback for job:', jobId, feedback);
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      setFeedbackMessage({ 
+        type: 'success', 
+        message: `Feedback submitted for row ${feedback[0]?.row_id}` 
+      });
+
+      // Move to next row or show success
+      if (currentRowForValidation !== null && currentRowForValidation < processedData.length - 1) {
+        setCurrentRowForValidation(currentRowForValidation + 1);
+        setTimeout(() => setFeedbackMessage(null), 2000);
+      } else {
+        // All rows validated
+        setValidationMode(false);
+        setCurrentRowForValidation(null);
+        setTimeout(() => setFeedbackMessage(null), 3000);
+      }
+    } catch (error) {
+      setFeedbackMessage({ 
+        type: 'error', 
+        message: 'Failed to submit feedback. Please try again.' 
+      });
+    } finally {
+      setSubmittingFeedback(false);
+    }
+  };
+
+  const handleStartValidation = () => {
+    setValidationMode(true);
+    setCurrentRowForValidation(0);
+    setFeedbackMessage(null);
+  };
+
+  const handleSkipValidation = () => {
+    if (currentRowForValidation !== null && currentRowForValidation < processedData.length - 1) {
+      setCurrentRowForValidation(currentRowForValidation + 1);
+    } else {
+      setValidationMode(false);
+      setCurrentRowForValidation(null);
+    }
+  };
+
+  const handleExitValidation = () => {
+    setValidationMode(false);
+    setCurrentRowForValidation(null);
+  };
+
+  // Render validation component if in validation mode
+  if (validationMode && currentRowForValidation !== null) {
+    const rowData = paginatedData[currentRowForValidation];
+    
+    // Prepare row data with required structure for validation component
+    const validationRowData = {
+      row_id: rowData?.row_id || rowData?._id || String(currentRowForValidation),
+      extracted_data: rowData?.extracted_data || {},
+      enumerated_sentences: rowData?.enumerated_sentences || [],
+    } as ValidationProps['rowData'];
+
+    return (
+      <Box sx={{ width: '100%' }}>
+        <Alert severity="info" sx={{ mb: 2 }}>
+          Validating row {currentRowForValidation + 1} of {processedData.length}
+        </Alert>
+        
+        {feedbackMessage && (
+          <Alert severity={feedbackMessage.type} sx={{ mb: 2 }}>
+            {feedbackMessage.message}
+          </Alert>
+        )}
+
+        <ExtractionValidation
+          rowData={validationRowData}
+          onValidationComplete={handleValidationComplete}
+        />
+
+        <Stack direction="row" spacing={2} sx={{ mt: 3 }}>
+          <Button 
+            variant="outlined" 
+            onClick={handleSkipValidation}
+            disabled={submittingFeedback}
+          >
+            Skip This Row
+          </Button>
+          <Button 
+            variant="outlined" 
+            color="error"
+            onClick={handleExitValidation}
+            disabled={submittingFeedback}
+          >
+            Exit Validation Mode
+          </Button>
+        </Stack>
+      </Box>
+    );
+  }
+
   return (
     <Box sx={{ width: '100%' }}>
+      {/* Validation Button Bar */}
+      {showValidation && (
+        <Box sx={{ mb: 2, p: 2, backgroundColor: '#f5f5f5', borderRadius: 1 }}>
+          <Stack direction="row" spacing={2} alignItems="center">
+            <ValidationIcon sx={{ color: 'primary.main' }} />
+            <Box>
+              <Typography variant="subtitle2" fontWeight="bold">
+                Targeted Visual Validation
+              </Typography>
+              <Typography variant="caption" color="textSecondary">
+                Review extraction results and confirm supporting sentences
+              </Typography>
+            </Box>
+            <Button 
+              variant="contained" 
+              onClick={handleStartValidation}
+              sx={{ ml: 'auto' }}
+            >
+              Start Validation
+            </Button>
+          </Stack>
+        </Box>
+      )}
+
+      {feedbackMessage && (
+        <Alert severity={feedbackMessage.type} sx={{ mb: 2 }}>
+          {feedbackMessage.message}
+        </Alert>
+      )}
+
       {/* Search Bar */}
       <Box sx={{ mb: 2 }}>
         <TextField

@@ -71,3 +71,48 @@ class HealthCheckResponse(BaseModel):
     version: str
     database_connected: bool
     timestamp: datetime
+
+class SentenceReference(BaseModel):
+    """Reference to a specific sentence in the source text"""
+    sentence_id: int
+    sentence_text: str
+    justification: str
+
+class CategoryExtractionWithValidation(BaseModel):
+    """Category extraction with supporting sentences and validation metadata"""
+    value: Optional[str]
+    confidence: Optional[float] = None
+    supporting_sentences: List[SentenceReference] = []
+    justification: str
+    validation_status: str = "pending"
+    user_validated_sentences: List[SentenceReference] = []
+
+class CandidateSentence(BaseModel):
+    """Candidate sentence for missing extractions"""
+    sentence_id: int
+    sentence_text: str
+    relevance_score: float
+    reasons: str
+
+class EnumeratedSentence(BaseModel):
+    """A sentence with its enumeration ID"""
+    sentence_id: int
+    sentence_text: str
+
+class ExtractionResultItemWithValidation(BaseModel):
+    """Extended extraction result with validation support"""
+    row_is: str
+    extracted_data: Dict[str, CategoryExtractionWithValidation]
+    missing_extractions: Dict[str, List[CandidateSentence]] = {}
+    enumerated_sentences: List[EnumeratedSentence]
+    errors: Optional[List[str]]
+
+class ExtractionFeedback(BaseModel):
+    """User feedback for validation loop"""
+    job_id: str
+    row_id: str
+    category: str
+    validation_status: str
+    user_validated_sentences: List[int] = []
+    maual_value: Optional[str] = None
+    notes: Optional[str] = None
