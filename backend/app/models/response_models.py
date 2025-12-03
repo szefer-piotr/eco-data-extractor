@@ -1,6 +1,7 @@
 """Response models for API endpoints"""
 
 from multiprocessing import Value
+from signal import default_int_handler
 from token import OP
 from typing import List, Optional, Dict, Any, Tuple
 from pydantic import BaseModel, Field
@@ -15,12 +16,30 @@ class ExtractionStatus(str, Enum):
     FAILED = "failed"
     CANCELLED = "cancelled"
 
+# Extraction with numerated sentences
+class ExtractionEvidence(BaseModel):
+    """Evidence for single extracted value"""
+    value: Optional[str] = Field(default=None, description="Extracted of inferred value")
+    sentence_numbers: List[int] = Field(default_factory=list, description="1-based indices of supporting sentences")
+    rationale: str = Field(..., description="Justification for why this value was extracted from these sentences")
+    is_inferred: bool = Field(default=False, description="True if value was inferred rather than directly stated")
+    confidence: float = Field(default=1.0, ge=0, le=1, description="Confidence score for this extraction")
+
 class CategoryExtraction(BaseModel):
+    values: List[ExtractionEvidence] = Field(default_factory=list, description="List of extracted/inferred values with evidence")
+    primary_value: Optional[str] = Field(default=None, desctiption="Primary/most confident value for backward compatibility")
     value: Optional[str] = Field(default=None, description="Extracted value or null if not found")
     sentence_numbers: List[int] = Field(default_factory=list, description="1-based indices of supporting sentences")
     span_offset: Optional[List[Tuple[int, int]]] = Field(default=None, description="Optional character spans in full text")
     confidence: Optional[float] = Field(default=None, ge=0, le=1)
     rationale: Optional[str] = Field(default=None, description="Optional brief reason/citation note")
+
+# class CategoryExtraction(BaseModel):
+#     value: Optional[str] = Field(default=None, description="Extracted value or null if not found")
+#     sentence_numbers: List[int] = Field(default_factory=list, description="1-based indices of supporting sentences")
+#     span_offset: Optional[List[Tuple[int, int]]] = Field(default=None, description="Optional character spans in full text")
+#     confidence: Optional[float] = Field(default=None, ge=0, le=1)
+#     rationale: Optional[str] = Field(default=None, description="Optional brief reason/citation note")
 
 class ExtractionResultItem(BaseModel):
     """Single extraction result"""
@@ -71,3 +90,4 @@ class HealthCheckResponse(BaseModel):
     version: str
     database_connected: bool
     timestamp: datetime
+
