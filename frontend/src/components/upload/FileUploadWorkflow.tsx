@@ -61,6 +61,43 @@ const FileUploadWorkflow: React.FC<FileUploadWorkflowProps> = ({ onComplete }) =
     }
   };
 
+  const handleFolderSelect = async (files: File[]) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Filter PDFs (should already be filtered, but double-check)
+      const pdfFiles = files.filter(f => 
+        f.name.toLowerCase().endsWith('.pdf')
+      );
+
+      if (pdfFiles.length === 0) {
+        setError('No PDF files found in selected folder');
+        setIsLoading(false);
+        return;
+      }
+
+      // Create preview (show PDF count)
+      const uploadedFile: UploadedFile = {
+        name: `Folder with ${pdfFiles.length} PDFs`,
+        size: pdfFiles.reduce((sum, f) => sum + f.size, 0),
+        type: 'pdf-folder',
+        preview: {
+          pdfCount: pdfFiles.length,
+        },
+        nativeFiles: pdfFiles,  // Store all files
+      };
+
+      setUploadedFile(uploadedFile);
+      setFile(uploadedFile);
+      setStep('preview');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to process folder');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleRemoveFile = () => {
     setUploadedFile(null);
     setFile(null);
@@ -74,6 +111,7 @@ const FileUploadWorkflow: React.FC<FileUploadWorkflowProps> = ({ onComplete }) =
       if (uploadedFile?.type === 'csv') {
         setStep('configure');
       } else {
+        // PDF or PDF folder - skip column configuration
         onComplete?.();
       }
     } else if (step === 'configure') {
@@ -110,6 +148,7 @@ const FileUploadWorkflow: React.FC<FileUploadWorkflowProps> = ({ onComplete }) =
         {step === 'upload' && (
           <FileUploader
             onFileSelect={handleFileSelect}
+            onFolderSelect={handleFolderSelect}
             isLoading={isLoading}
             error={error}
             onErrorClear={() => setError(null)}

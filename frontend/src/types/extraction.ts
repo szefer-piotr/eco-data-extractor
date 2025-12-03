@@ -15,15 +15,17 @@ export interface Category {
 export interface UploadedFile {
   name: string;
   size: number;
-  type: 'csv' | 'pdf';
+  type: 'csv' | 'pdf' | 'pdf-folder';
   preview?: FilePreview;
-  nativeFile?: File;
+  nativeFile?: File;      // For single file uploads
+  nativeFiles?: File[];   // For folder uploads (array of PDFs)
 }
 
 export interface FilePreview {
   columns?: string[];
   sampleRows?: Record<string, unknown>[];
   pageCount?: number;
+  pdfCount?: number;      // Number of PDFs in folder
 }
 
 export interface CSVFilePreview extends FilePreview {

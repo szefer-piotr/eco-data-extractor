@@ -7,12 +7,14 @@ import {
   Button,
   CircularProgress,
   Alert,
+  Stack,
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { fileApi } from '@services/fileApi';
 
 interface FileUploaderProps {
   onFileSelect: (file: File, fileType: 'csv' | 'pdf') => void;
+  onFolderSelect?: (files: File[]) => void;
   isLoading?: boolean;
   error?: string | null;
   onErrorClear?: () => void;
@@ -20,11 +22,13 @@ interface FileUploaderProps {
 
 const FileUploader: React.FC<FileUploaderProps> = ({
   onFileSelect,
+  onFolderSelect,
   isLoading = false,
   error = null,
   onErrorClear,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const folderInputRef = useRef<HTMLInputElement>(null);
   const [dragActive, setDragActive] = useState(false);
 
   const validateAndSelect = (file: File) => {
@@ -73,6 +77,35 @@ const FileUploader: React.FC<FileUploaderProps> = ({
     }
   };
 
+  const handleFolderInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (onErrorClear) onErrorClear();
+    
+    if (e.target.files && e.target.files.length > 0) {
+      const files = Array.from(e.target.files);
+      
+      // Filter only PDF files
+      const pdfFiles = files.filter(file => 
+        file.name.toLowerCase().endsWith('.pdf')
+      );
+      
+      if (pdfFiles.length === 0) {
+        // Still call onFolderSelect with empty array so parent can show error
+        if (onFolderSelect) {
+          onFolderSelect([]);
+        }
+        return;
+      }
+      
+      // Call the folder select handler
+      if (onFolderSelect) {
+        onFolderSelect(pdfFiles);
+      }
+    }
+    
+    // Reset input so same folder can be selected again
+    e.target.value = '';
+  };
+
   return (
     <Box sx={{ width: '100%' }}>
       {error && (
@@ -108,6 +141,18 @@ const FileUploader: React.FC<FileUploaderProps> = ({
           style={{ display: 'none' }}
           disabled={isLoading}
         />
+        
+        {/* Folder selection input */}
+        <input
+          ref={folderInputRef}
+          type="file"
+          webkitdirectory=""
+          directory=""
+          multiple
+          onChange={handleFolderInput}
+          style={{ display: 'none' }}
+          disabled={isLoading}
+        />
 
         {isLoading ? (
           <>
@@ -123,15 +168,24 @@ const FileUploader: React.FC<FileUploaderProps> = ({
             <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
               or click the button below
             </Typography>
-            <Button
-              variant="contained"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isLoading}
-            >
-              Select File
-            </Button>
+            <Stack direction="row" spacing={2} justifyContent="center" sx={{ mb: 2 }}>
+              <Button
+                variant="contained"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isLoading}
+              >
+                Select File
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={() => folderInputRef.current?.click()}
+                disabled={isLoading}
+              >
+                Select PDF Folder
+              </Button>
+            </Stack>
             <Typography variant="caption" sx={{ mt: 2, display: 'block', color: 'textSecondary' }}>
-              Supported formats: CSV, PDF (Max 100MB)
+              Supported formats: CSV, PDF, or select a folder with PDFs (Max 100MB per file)
             </Typography>
           </>
         )}

@@ -110,6 +110,38 @@ const FilePreview: React.FC<FilePreviewProps> = ({ file, onRemove }) => {
           )}
         </Box>
       )}
+
+      {file.type === 'pdf-folder' && (
+        <Box sx={{ mt: 3 }}>
+          <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 'bold' }}>
+            Folder Details:
+          </Typography>
+          {file.preview?.pdfCount && (
+            <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
+              PDF Files: {file.preview.pdfCount}
+            </Typography>
+          )}
+          {file.nativeFiles && file.nativeFiles.length > 0 && file.nativeFiles.length <= 10 && (
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="caption" color="textSecondary" sx={{ mb: 1, display: 'block' }}>
+                Files:
+              </Typography>
+              <Stack spacing={0.5}>
+                {file.nativeFiles.map((f, idx) => (
+                  <Typography key={idx} variant="caption" sx={{ fontFamily: 'monospace' }}>
+                    • {f.name}
+                  </Typography>
+                ))}
+              </Stack>
+            </Box>
+          )}
+          {file.nativeFiles && file.nativeFiles.length > 10 && (
+            <Typography variant="caption" color="textSecondary" sx={{ mt: 1, display: 'block' }}>
+              (Showing first 10 of {file.nativeFiles.length} files)
+            </Typography>
+          )}
+        </Box>
+      )}
     </Paper>
   );
 };

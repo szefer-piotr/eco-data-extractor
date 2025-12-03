@@ -17,6 +17,7 @@ from app.services.data_storage_service import DataStorageService
 from app.models.request_models import CategoryField
 from app.config import settings
 from app.utils.text import TextProcessor
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -134,13 +135,17 @@ async def upload_pdf(
             if not is_valid:
                 raise HTTPException(status_code=400, detail=f"{file.filename}: {error}")
 
-            text = PDFService.extract_text(pdf_content)
+            raw_text = PDFService.extract_text(pdf_content)
+            text = PDFService.clean_pdf_text(raw_text)
 
             sentences = TextProcessor.split_sentences(text)
             sentence_offsets = TextProcessor.get_sentence_offsets(text, sentences)
 
+            # Use filename (without extension) as ID
+            pdf_id = Path(file.filename).stem
+
             rows.append({
-                "id": f"pdf_{idx}_{file.filename}",
+                "id": pdf_id,
                 "text": text,
                 "source": file.filename,
                 "sentences": sentences,
@@ -157,9 +162,11 @@ async def upload_pdf(
         DataStorageService.store_job_rows(job_id, rows)
 
         filenames = [file.filename for file in files]
+        # Detect if folder upload (multiple files) or single file
+        file_type = "pdf-folder" if len(files) > 1 else "pdf"
         DataStorageService.store_file_metadata(
             file_id=job_id,
-            file_type="pdf",
+            file_type=file_type,
             filename=",".join(filenames),
             columns=["id","text","source"]
         )
@@ -182,7 +189,6 @@ async def upload_pdf(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
     
 @router.get("/validate")
 async def validate_file(file_id: str):

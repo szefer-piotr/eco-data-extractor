@@ -59,6 +59,10 @@ const StartProcessingButton: React.FC<StartProcessingButtonProps> = ({
       if (!idColumn) errors.push('ID column not selected.');
       if (!textColumn) errors.push('Text column not selected.');
       if (idColumn === textColumn) errors.push('ID and text columns must be different.');
+    } else if (file.type === 'pdf-folder') {
+      if (!file.nativeFiles || file.nativeFiles.length === 0) {
+        errors.push('No PDF files found in selected folder.');
+      }
     }
 
     if (categories.length === 0) {
@@ -144,6 +148,17 @@ const StartProcessingButton: React.FC<StartProcessingButtonProps> = ({
           model,
           apiKey
         );
+      } else if (file.type === 'pdf-folder') {
+        if (!file.nativeFiles || file.nativeFiles.length === 0) {
+          throw new Error('No PDF files available');
+        }
+        response = await extractionApi.uploadPDF(
+          file.nativeFiles,
+          categoriesRecord,
+          provider,
+          model,
+          apiKey
+        );
       } else {
         throw new Error('Invalid file type');
       }
@@ -223,7 +238,9 @@ const StartProcessingButton: React.FC<StartProcessingButtonProps> = ({
                 <Box display="flex" justifyContent="space-between">
                   <Typography variant="body2">File:</Typography>
                   <Typography variant="body2" fontWeight={500}>
-                    {file?.name}
+                    {file?.type === 'pdf-folder' && file?.preview?.pdfCount
+                      ? `${file.name} (${file.preview.pdfCount} PDFs)`
+                      : file?.name}
                   </Typography>
                 </Box>
                 {file?.type === 'csv' && (
