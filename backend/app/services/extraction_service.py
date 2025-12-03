@@ -8,7 +8,7 @@ import uuid
 from datetime import datetime
 
 from app.models.request_models import CategoryField, ExtractionRequest
-from app.models.response_models import ExtractionResultItem, ExtractionResult, ExtractionStatus, CategoryExtraction
+from app.models.response_models import ExtractionResultItem, ExtractionResult, ExtractionStatus, CategoryExtraction, ExtractionEvidence
 from app.services.llm_providers import get_provider
 from app.config import settings
 
@@ -18,6 +18,110 @@ class ExtractionService:
     """Service for managing extraction logic"""
     
     MAX_RETRIES = 3
+
+    @staticmethod
+    def numerate_text(text: str, sentences: List[str]) -> str:
+        """
+        Create a numbered version of the text for extraction.
+
+        Args:
+            text: Original text
+            sentences: Pre-split sentences from TextProcessor
+
+        Returns:
+            Text with numbered sentences: "[1] First sentence. [2] Second sentence..."
+        """
+        if not sentences:
+            return f"[1] {text}"
+        
+        numbered_parts = []
+        for idx, sentence in enumerate(sentences, start=1):
+            numbered_parts.append(f"[{idx}] {sentence}")
+
+        return " ".join(numbered_parts)
+
+    @staticmethod
+    def construct_extraction_prompt_with_validation(
+        text: str,
+        sentences: List[str],
+        categories: List[CategoryField]
+    ) -> str:
+        """
+        Construct extraction prompt with sentence numbering and validation requirements.
+        
+        Args:
+            text: Original text
+            sentences: Pre-split sentences
+            categories: List of categories to extract
+            
+        Returns:
+            Formatted prompt with numbered text and validation instructions
+        """
+        # Numerate the text
+        numbered_text = ExtractionService.numerate_text(text, sentences)
+        
+        # Build category descriptions
+        category_descriptions = []
+        category_names = []
+        for cat in categories:
+            category_descriptions.append(f"- {cat.name}: {cat.prompt}")
+            category_names.append(cat.name)
+        
+        # Build expected output schema example
+        example_output = {
+            "example_category": {
+                "values": [
+                    {
+                        "value": "extracted value or null",
+                        "sentence_numbers": [1, 3],
+                        "rationale": "Brief explanation of why this value was extracted from these sentences",
+                        "is_inferred": False,
+                        "confidence": 0.95
+                    }
+                ],
+                "primary_value": "the most confident value"
+            }
+        }
+        
+        prompt = f"""You are extracting structured information from scientific text. The text has been split into numbered sentences for precise citation.
+
+## INSTRUCTIONS:
+
+1. For each category, extract ALL relevant values found in the text.
+2. For EACH extracted value, you MUST provide:
+   - `value`: The extracted value (use null if not found)
+   - `sentence_numbers`: Array of 1-based sentence numbers that support this extraction
+   - `rationale`: A brief justification explaining WHY this value was extracted and HOW the cited sentences support it
+   - `is_inferred`: Set to true if the value was inferred/deduced rather than directly stated
+   - `confidence`: A score from 0-1 indicating your confidence in the extraction
+
+3. If multiple values exist for a category, include ALL of them in the `values` array.
+4. Set `primary_value` to the most confident or most relevant value.
+5. If a value is inferred from context (not explicitly stated), mark `is_inferred: true` and explain the inference in the rationale.
+
+## CATEGORIES TO EXTRACT:
+{chr(10).join(category_descriptions)}
+
+## EXPECTED OUTPUT FORMAT:
+```json
+{json.dumps(example_output, indent=2)}
+```
+
+## TEXT TO ANALYZE (sentences are numbered [1], [2], etc.):
+---
+{numbered_text}
+---
+
+## IMPORTANT RULES:
+- Sentence numbers MUST match the [N] markers in the text above
+- Every extraction MUST have at least one supporting sentence number
+- Rationale MUST reference the specific content from the cited sentences
+- Do NOT make up information not present in the text
+- If information is not found, return empty values array and null primary_value
+
+Return ONLY valid JSON, no other text:"""
+
+        return prompt
 
     @staticmethod
     def construct_extraction_prompt(
@@ -95,6 +199,90 @@ class ExtractionService:
         return {}, f"Invalid JSON in LLM response for row {row_id}"
 
     @staticmethod
+    def parse_validated_llm_response(
+        response_text: str,
+        row_id: str,
+        categories: List[CategoryField]
+    ) -> Tuple[Dict[str, CategoryExtraction], Optional[str]]:
+        """
+        Parse LLM response with validation data into CategoryExtraction objects.
+        
+        Args:
+            response_text: Raw response from LLM
+            row_id: ID of row being processed
+            categories: Category definitions
+            
+        Returns:
+            Tuple of (dict of CategoryExtraction objects, error_message)
+        """
+        try:
+            # Try to parse JSON
+            data = json.loads(response_text)
+            
+            if not isinstance(data, dict):
+                return {}, f"LLM response is not a JSON object for row {row_id}"
+            
+            result = {}
+            for cat in categories:
+                cat_data = data.get(cat.name, {})
+                
+                if isinstance(cat_data, dict):
+                    values_data = cat_data.get("values", [])
+                    primary_value = cat_data.get("primary_value")
+                    
+                    # Parse evidence items
+                    evidence_list = []
+                    all_sentence_nums = []
+                    
+                    for v in values_data:
+                        if isinstance(v, dict):
+                            sent_nums = v.get("sentence_numbers", [])
+                            all_sentence_nums.extend(sent_nums)
+                            
+                            evidence = ExtractionEvidence(
+                                value=v.get("value"),
+                                sentence_numbers=sent_nums,
+                                rationale=v.get("rationale", ""),
+                                is_inferred=v.get("is_inferred", False),
+                                confidence=v.get("confidence", 0.9)
+                            )
+                            evidence_list.append(evidence)
+                    
+                    # Build CategoryExtraction
+                    result[cat.name] = CategoryExtraction(
+                        values=evidence_list,
+                        primary_value=primary_value,
+                        value=primary_value,  # Backward compatibility
+                        sentence_numbers=list(set(all_sentence_nums)),
+                        confidence=evidence_list[0].confidence if evidence_list else 0.0,
+                        rationale=evidence_list[0].rationale if evidence_list else None
+                    )
+                else:
+                    # Handle old-style simple value response
+                    result[cat.name] = CategoryExtraction(
+                        values=[],
+                        primary_value=str(cat_data) if cat_data else None,
+                        value=str(cat_data) if cat_data else None
+                    )
+            
+            return result, None
+            
+        except json.JSONDecodeError as e:
+            # Try to extract JSON from response
+            try:
+                start = response_text.find("{")
+                end = response_text.rfind("}") + 1
+                if start != -1 and end > start:
+                    return ExtractionService.parse_validated_llm_response(
+                        response_text[start:end], row_id, categories
+                    )
+            except:
+                pass
+            
+            logger.warning(f"Could not parse LLM response for row {row_id}: {response_text[:200]}")
+            return {}, f"Invalid JSON in LLM response for row {row_id}"
+
+    @staticmethod
     def validate_extracted_data(
         data: Dict[str, Any],
         categories: List[CategoryField]
@@ -170,10 +358,14 @@ class ExtractionService:
         for idx, row in enumerate(rows):
             row_id = row.get("id", str(idx))
             text = row.get("text", "")
+            sentences = row.get("sentences", [])  # Use pre-computed sentences
             
-            # Construct prompt
-            prompt = ExtractionService.construct_extraction_prompt(text, categories)
-            logger.info(f"Row {row_id}: Sending prompt to LLM (text length: {len(text)} chars)")
+            # Use new prompt with validation
+            prompt = ExtractionService.construct_extraction_prompt_with_validation(
+                text, sentences, categories
+            )
+            
+            logger.info(f"Row {row_id}: Sending validated prompt (text length: {len(text)}, sentences: {len(sentences)})")
             logger.debug(f"Row {row_id}: Full prompt:\n{prompt}")
             
             # Get LLM response
@@ -193,10 +385,9 @@ class ExtractionService:
             raw_response = llm_response.get("response", "")
             logger.info(f"Row {row_id}: Raw LLM response:\n{raw_response}")
             
-            # Parse response
-            extracted_data, parse_error = ExtractionService.parse_llm_response(
-                raw_response,
-                row_id
+            # Parse with new validated parser
+            extracted_data, parse_error = ExtractionService.parse_validated_llm_response(
+                raw_response, row_id, categories
             )
             
             logger.info(f"Row {row_id}: Parsed extracted_data: {extracted_data}")
@@ -207,9 +398,16 @@ class ExtractionService:
             if parse_error:
                 errors.append(parse_error)
             
-            # Validate extracted data
+            # Validate sentence numbers are within bounds
+            max_sentence = len(sentences)
+            for cat_name, cat_extraction in extracted_data.items():
+                for sent_num in cat_extraction.sentence_numbers:
+                    if sent_num < 1 or sent_num > max_sentence:
+                        errors.append(f"{cat_name}: Invalid sentence number {sent_num} (max: {max_sentence})")
+            
+            # Validate extracted data against category expectations
             is_valid, validation_errors = ExtractionService.validate_extracted_data(
-                extracted_data,
+                {k: v.primary_value for k, v in extracted_data.items()},
                 categories
             )
             
@@ -217,18 +415,9 @@ class ExtractionService:
             
             errors.extend(validation_errors)
             
-            # Convert extracted data to CategoryExtraction objects
-            category_extraction_data = {}
-            for key, value in extracted_data.items():
-                category_extraction_data[key] = CategoryExtraction(
-                    value=value if value else None,
-                    sentence_numbers=[],
-                    confidence=0.9 if value else 0.0
-                )
-            
             results.append(ExtractionResultItem(
                 row_id=row_id,
-                extracted_data=category_extraction_data,  # ← Use the converted data
+                extracted_data=extracted_data,
                 errors=errors if errors else None
             ))
             

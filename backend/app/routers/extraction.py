@@ -67,6 +67,23 @@ async def get_results(job_id: str):
         ) 
 
     if job["status"] == ExtractionStatus.COMPLETED:
+        results = DataStorageService.get_job_results(job_id)
+        original_rows = DataStorageService.get_job_rows(job_id)
+        
+        # Create lookup map for original rows
+        rows_map = {row.get("id"): row for row in original_rows}
+        
+        # Enrich results with original text and sentences
+        enriched_results = []
+        for result in results:
+            row_id = result.get("row_id")
+            original_row = rows_map.get(row_id, {})
+            enriched_results.append({
+                **result,
+                "original_text": original_row.get("text", ""),
+                "sentences": original_row.get("sentences", []),
+            })
+        
         return {
             "job_id": job_id, 
             "status": job["status"].value,
@@ -76,7 +93,7 @@ async def get_results(job_id: str):
             "categories": job["categories"],
             "provider": job["provider"],
             "model": job["model"],
-            "results": DataStorageService.get_job_results(job_id)
+            "results": enriched_results
         }
 
     raise HTTPException(status_code=410, detail="Job was cancelled")

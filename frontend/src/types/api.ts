@@ -18,6 +18,24 @@ export interface JobStatus {
   updated_at: string;
 }
 
+export interface ExtractionEvidence {
+  value: string | null;
+  sentence_numbers: number[];
+  rationale: string;
+  is_inferred: boolean;
+  confidence: number;
+}
+
+export interface CategoryExtraction {
+  values: ExtractionEvidence[];
+  primary_value: string | null;
+  // Backward compatibility fields
+  value?: string | null;
+  sentence_numbers?: number[];
+  confidence?: number;
+  rationale?: string;
+}
+
 export interface ExtractionResult {
   job_id: string;
   status?: string;
@@ -27,7 +45,13 @@ export interface ExtractionResult {
   categories?: Array<{ name: string; prompt: string }>;
   provider?: string;
   model?: string;
-  results?: Record<string, unknown>[];
+  results?: Array<{
+    row_id: string;
+    extracted_data: Record<string, CategoryExtraction>;
+    errors?: string[];
+    original_text?: string;  // NEW
+    sentences?: string[];     // NEW
+  }>;
   data?: Record<string, unknown>[]; // For backward compatibility
   errors?: Array<{
     row_id: number;

@@ -24,6 +24,8 @@ import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import SearchIcon from '@mui/icons-material/Search';
 import WarningIcon from '@mui/icons-material/Warning';
 import { ExtractionResult } from '@api-types/api';
+import ExtractionEvidenceCard from './ExtractionEvidenceCard';
+import SentenceViewer from './SentenceViewer';
 
 interface ResultsTableProps {
   data: ExtractionResult;
@@ -44,6 +46,9 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
   const [orderBy, setOrderBy] = useState<string>('_id');
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const [searchFilter, setSearchFilter] = useState('');
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [selectedSentences, setSelectedSentences] = useState<number[]>([]);
+  const [selectedRowSentences, setSelectedRowSentences] = useState<string[]>([]);
 
   // Derive column names from actual data if available, otherwise use provided categoryNames
   const dynamicColumnNames = useMemo(() => {
@@ -317,10 +322,46 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
                             whiteSpace: 'nowrap',
                           }}
                         >
-                          {/* {String((row.extracted_data as Record<string, any>)?.[category] || '-')} */}
                           {(() => {
                             const cellData = (row.extracted_data as Record<string, any>)?.[category];
                             
+                            if (!cellData) return '-';
+                            
+                            // Handle new structure with values array
+                            if (cellData.values && Array.isArray(cellData.values)) {
+                              if (cellData.values.length > 0) {
+                                const primaryEvidence = cellData.values[0];
+                                const hasMultiple = cellData.values.length > 1;
+                                
+                                return (
+                                  <Stack spacing={0.5}>
+                                    <Stack direction="row" alignItems="center" spacing={0.5} flexWrap="wrap">
+                                      <Typography variant="body2">
+                                        {String(primaryEvidence.value || cellData.primary_value || '-')}
+                                      </Typography>
+                                      {hasMultiple && (
+                                        <Chip
+                                          label={`+${cellData.values.length - 1}`}
+                                          size="small"
+                                          variant="outlined"
+                                          sx={{ height: 20, fontSize: '0.7rem' }}
+                                        />
+                                      )}
+                                    </Stack>
+                                    {primaryEvidence.confidence !== undefined && (
+                                      <Typography variant="caption" color="textSecondary">
+                                        {(primaryEvidence.confidence * 100).toFixed(0)}%
+                                      </Typography>
+                                    )}
+                                  </Stack>
+                                );
+                              } else {
+                                // Empty values array
+                                return '-';
+                              }
+                            }
+                            
+                            // Fallback to old structure
                             if (cellData && typeof cellData === 'object' && 'value' in cellData) {
                               const { value, confidence } = cellData;
                               return (
@@ -369,8 +410,8 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
                     >
                       <Collapse in={isExpanded} timeout="auto" unmountOnExit>
                         <Box sx={{ p: 2, backgroundColor: '#fafafa' }}>
-                          <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                            Full Row Details
+                          <Typography variant="subtitle2" sx={{ mb: 2 }}>
+                            Extraction Details
                           </Typography>
 
                           {hasError && (
@@ -392,27 +433,72 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
                             </Box>
                           )}
 
-                          <Stack spacing={1}>
-                            {Object.entries(row).map(([key, value]) => (
-                              <Box
-                                key={key}
-                                sx={{
-                                  display: 'grid',
-                                  gridTemplateColumns: '150px 1fr',
-                                  gap: 2,
-                                  pb: 1,
-                                  borderBottom: '1px solid #e0e0e0',
-                                }}
-                              >
-                                <Typography variant="body2" fontWeight={600}>
-                                  {key}:
+                          {/* Category Extractions */}
+                          {dynamicColumnNames.map((category) => {
+                            const categoryData = (row.extracted_data as Record<string, any>)?.[category];
+                            if (!categoryData) return null;
+
+                            return (
+                              <Box key={category} sx={{ mb: 3 }}>
+                                <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600 }}>
+                                  {category}
                                 </Typography>
-                                <Typography variant="body2">
-                                  {String(value || '-')}
-                                </Typography>
+                                
+                                {/* New structure with values array */}
+                                {categoryData.values && Array.isArray(categoryData.values) ? (
+                                  categoryData.values.length > 0 ? (
+                                    <Stack spacing={1}>
+                                      {categoryData.values.map((evidence: any, idx: number) => (
+                                        <ExtractionEvidenceCard
+                                          key={idx}
+                                          evidence={evidence}
+                                          categoryName={category}
+                                          sentences={row.sentences}
+                                          onViewSentences={(sentenceNumbers) => {
+                                            setSelectedSentences(sentenceNumbers);
+                                            setSelectedRowSentences(row.sentences || []);
+                                            setViewerOpen(true);
+                                          }}
+                                        />
+                                      ))}
+                                    </Stack>
+                                  ) : (
+                                    <Box
+                                      sx={{
+                                        p: 1.5,
+                                        backgroundColor: 'white',
+                                        borderRadius: 1,
+                                        border: '1px solid #e0e0e0',
+                                      }}
+                                    >
+                                      <Typography variant="body2" color="textSecondary">
+                                        No extractions found
+                                      </Typography>
+                                    </Box>
+                                  )
+                                ) : (
+                                  /* Fallback to old structure */
+                                  <Box
+                                    sx={{
+                                      p: 1.5,
+                                      backgroundColor: 'white',
+                                      borderRadius: 1,
+                                      border: '1px solid #e0e0e0',
+                                    }}
+                                  >
+                                    <Typography variant="body2">
+                                      Value: {String(categoryData.value || categoryData.primary_value || '-')}
+                                    </Typography>
+                                    {categoryData.confidence !== undefined && (
+                                      <Typography variant="caption" color="textSecondary">
+                                        Confidence: {(categoryData.confidence * 100).toFixed(0)}%
+                                      </Typography>
+                                    )}
+                                  </Box>
+                                )}
                               </Box>
-                            ))}
-                          </Stack>
+                            );
+                          })}
                         </Box>
                       </Collapse>
                     </TableCell>
@@ -436,6 +522,15 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
         sx={{
           borderTop: '1px solid #e0e0e0',
         }}
+      />
+
+      {/* Sentence Viewer Dialog */}
+      <SentenceViewer
+        open={viewerOpen}
+        onClose={() => setViewerOpen(false)}
+        sentences={selectedRowSentences}
+        highlightedSentences={selectedSentences}
+        title="Supporting Sentences with Context"
       />
     </Box>
   );
