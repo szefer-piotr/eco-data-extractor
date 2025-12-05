@@ -107,6 +107,46 @@ const ExtractionEvidenceCard: React.FC<ExtractionEvidenceCardProps> = ({
                   </Button>
                 )}
               </Stack>
+
+              {/* Sentence Preview - show first supporting sentence */}
+              {sentences && sentences.length > 0 && evidence.sentence_numbers.length > 0 && (
+                <Box
+                  sx={{
+                    mt: 1,
+                    p: 1,
+                    backgroundColor: '#fafafa',
+                    borderRadius: 1,
+                    border: '1px solid #e0e0e0',
+                    maxHeight: '80px',
+                    overflow: 'auto',
+                  }}
+                >
+                  <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 0.5 }}>
+                    Preview:
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      fontStyle: 'italic',
+                      color: 'text.primary',
+                      display: 'block',
+                    }}
+                  >
+                    {(() => {
+                      const firstSentNum = evidence.sentence_numbers[0];
+                      const sentenceIndex = firstSentNum - 1; // Convert to 0-based
+                      if (sentenceIndex >= 0 && sentenceIndex < sentences.length) {
+                        const sentenceText = sentences[sentenceIndex];
+                        const truncated = sentenceText.length > 200
+                          ? sentenceText.substring(0, 200) + '...'
+                          : sentenceText;
+                        return `[${firstSentNum}] ${truncated}`;
+                      }
+                      return 'Sentence not available';
+                    })()}
+                  </Typography>
+                </Box>
+              )}
             </Box>
           )}
 

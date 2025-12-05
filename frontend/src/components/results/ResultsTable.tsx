@@ -35,6 +35,32 @@ interface ResultsTableProps {
 
 type Order = 'asc' | 'desc';
 
+/**
+ * Normalize sentences array - handles edge cases where sentences
+ * might be a single string or a single-element array with the whole text.
+ */
+const normalizeSentences = (sentences: unknown): string[] => {
+  if (!sentences) return [];
+  
+  // If it's a string, try to split it
+  if (typeof sentences === 'string') {
+    const split = sentences.split(/(?<=[.!?])\s+(?=[A-Z])/).filter(s => s.trim());
+    return split.length > 1 ? split : [sentences];
+  }
+  
+  // If it's an array
+  if (Array.isArray(sentences)) {
+    // If single very long sentence, try splitting
+    if (sentences.length === 1 && typeof sentences[0] === 'string' && sentences[0].length > 2000) {
+      const split = sentences[0].split(/(?<=[.!?])\s+(?=[A-Z])/).filter(s => s.trim());
+      return split.length > 1 ? split : sentences;
+    }
+    return sentences.filter(s => typeof s === 'string');
+  }
+  
+  return [];
+};
+
 const ResultsTable: React.FC<ResultsTableProps> = ({
   data,
   categoryNames,
@@ -453,10 +479,10 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
                                           key={idx}
                                           evidence={evidence}
                                           categoryName={category}
-                                          sentences={row.sentences}
+                                          sentences={normalizeSentences(row.sentences)}
                                           onViewSentences={(sentenceNumbers) => {
                                             setSelectedSentences(sentenceNumbers);
-                                            setSelectedRowSentences(row.sentences || []);
+                                            setSelectedRowSentences(normalizeSentences(row.sentences));
                                             setViewerOpen(true);
                                           }}
                                         />

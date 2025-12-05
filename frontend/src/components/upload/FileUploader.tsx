@@ -146,8 +146,10 @@ const FileUploader: React.FC<FileUploaderProps> = ({
         <input
           ref={folderInputRef}
           type="file"
-          webkitdirectory=""
-          directory=""
+          {...({
+            webkitdirectory: '',
+            directory: '',
+          } as any)}
           multiple
           onChange={handleFolderInput}
           style={{ display: 'none' }}
