@@ -2,26 +2,26 @@ import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
-  CardHeader,
   TextField,
   Button,
   Alert,
   FormControlLabel,
   Switch,
-  Container,
   Divider,
   Stack,
-  Paper,
   IconButton,
   Chip,
+  alpha,
+  useTheme,
 } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { useConfigStore } from '@store/configStore';
 import { useUIStore } from '@store/uiStore';
+import { useThemeMode } from '@context/ThemeModeContext';
+import Panel from '@components/layout/Panel';
+import { brand } from '../theme/theme';
 
 interface APIKeyState {
   provider: string;
@@ -32,13 +32,14 @@ interface APIKeyState {
 const SettingsPage: React.FC = () => {
   const { apiKeys, setApiKey, removeApiKey, models } = useConfigStore();
   const { addNotification } = useUIStore();
+  const { mode, setMode } = useThemeMode();
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
   const [apiKeyInputs, setApiKeyInputs] = useState<APIKeyState[]>([]);
-  const [darkMode, setDarkMode] = useState(localStorage.getItem('darkMode') === 'true');
   const [autoRefresh, setAutoRefresh] = useState(localStorage.getItem('autoRefresh') !== 'false');
   const [maxConcurrentJobs, setMaxConcurrentJobs] = useState('5');
 
   useEffect(() => {
-    // Initialize API key inputs from available providers
     if (models?.providers) {
       const providers = Object.keys(models.providers);
       setApiKeyInputs(
@@ -51,26 +52,17 @@ const SettingsPage: React.FC = () => {
     }
   }, [models, apiKeys]);
 
-  const handleSaveAPIKey = async (provider: string, key: string) => {
+  const handleSaveAPIKey = (provider: string, key: string) => {
     try {
       if (!key.trim()) {
         removeApiKey(provider);
-        addNotification({
-          type: 'success',
-          message: `API key for ${provider} removed`,
-        });
+        addNotification({ type: 'success', message: `API key for ${provider} removed` });
       } else {
         setApiKey(provider, key);
-        addNotification({
-          type: 'success',
-          message: `API key for ${provider} saved`,
-        });
+        addNotification({ type: 'success', message: `API key for ${provider} saved` });
       }
-    } catch (error) {
-      addNotification({
-        type: 'error',
-        message: `Failed to save API key for ${provider}`,
-      });
+    } catch {
+      addNotification({ type: 'error', message: `Failed to save API key for ${provider}` });
     }
   };
 
@@ -82,41 +74,37 @@ const SettingsPage: React.FC = () => {
     );
   };
 
-  const handleDarkModeToggle = (checked: boolean) => {
-    setDarkMode(checked);
-    localStorage.setItem('darkMode', JSON.stringify(checked));
-    addNotification({
-      type: 'success',
-      message: 'Theme preference updated',
-    });
-  };
-
-  const handleAutoRefreshToggle = (checked: boolean) => {
-    setAutoRefresh(checked);
-    localStorage.setItem('autoRefresh', JSON.stringify(checked));
-    addNotification({
-      type: 'success',
-      message: 'Auto-refresh setting updated',
-    });
-  };
-
   return (
-    <Container maxWidth="md">
-      <Box sx={{ py: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold', mb: 3 }}>
+    <Box sx={{ maxWidth: 720, mx: 'auto' }}>
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="h5" component="h1" sx={{ fontWeight: 700, mb: 0.5 }}>
           Settings
         </Typography>
+        <Typography variant="body2" color="text.secondary">
+          Configure API keys and preferences
+        </Typography>
+      </Box>
 
-        {/* API Keys Section */}
-        <Card sx={{ mb: 3 }}>
-          <CardHeader title="API Keys & Providers" subheader="Configure your LLM provider credentials" />
-          <Divider />
-          <CardContent>
-            <Stack spacing={3}>
-              {apiKeyInputs.map((item) => (
-                <Paper key={item.provider} sx={{ p: 2, bgcolor: 'background.default' }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 'bold', textTransform: 'capitalize' }}>
+      <Stack spacing={2.5}>
+        <Panel title="API Keys & Providers" subtitle="Configure your LLM provider credentials">
+          <Stack spacing={2}>
+            {apiKeyInputs.length === 0 ? (
+              <Typography variant="body2" color="text.secondary">
+                No providers available. Start the backend to load provider options.
+              </Typography>
+            ) : (
+              apiKeyInputs.map((item) => (
+                <Box
+                  key={item.provider}
+                  sx={{
+                    p: 2,
+                    borderRadius: '12px',
+                    border: `1px solid ${theme.palette.divider}`,
+                    bgcolor: isDark ? alpha('#ffffff', 0.02) : alpha('#f8fafc', 0.8),
+                  }}
+                >
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, textTransform: 'capitalize' }}>
                       {item.provider}
                     </Typography>
                     {apiKeys[item.provider] && (
@@ -143,19 +131,17 @@ const SettingsPage: React.FC = () => {
                       }
                       size="small"
                       fullWidth
-                      sx={{ flex: 1 }}
                       aria-label={`API key for ${item.provider}`}
                     />
                     <IconButton
                       size="small"
                       onClick={() => handleToggleVisibility(item.provider)}
-                      sx={{ mt: 0.5 }}
                       aria-label={item.visible ? 'Hide API key' : 'Show API key'}
                     >
                       {item.visible ? <VisibilityOffIcon /> : <VisibilityIcon />}
                     </IconButton>
                   </Box>
-                  <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+                  <Box sx={{ display: 'flex', gap: 1, mt: 1.5 }}>
                     <Button
                       size="small"
                       variant="contained"
@@ -181,55 +167,65 @@ const SettingsPage: React.FC = () => {
                       </Button>
                     )}
                   </Box>
-                </Paper>
-              ))}
-            </Stack>
-          </CardContent>
-        </Card>
+                </Box>
+              ))
+            )}
+          </Stack>
+        </Panel>
 
-        {/* User Preferences Section */}
-        <Card sx={{ mb: 3 }}>
-          <CardHeader title="User Preferences" subheader="Customize your experience" />
-          <Divider />
-          <CardContent>
-            <Stack spacing={2}>
-              <FormControlLabel
-                control={<Switch checked={darkMode} onChange={(e) => handleDarkModeToggle(e.target.checked)} />}
-                label="Dark Mode (Coming soon)"
-              />
-              <FormControlLabel
-                control={<Switch checked={autoRefresh} onChange={(e) => handleAutoRefreshToggle(e.target.checked)} />}
-                label="Auto-refresh Job Status"
-              />
-            </Stack>
-          </CardContent>
-        </Card>
-
-        {/* Performance Settings Section */}
-        <Card>
-          <CardHeader title="Performance" subheader="Configure system behavior" />
-          <Divider />
-          <CardContent>
-            <TextField
-              label="Max Concurrent Jobs"
-              type="number"
-              inputProps={{ min: 1, max: 10 }}
-              value={maxConcurrentJobs}
-              onChange={(e) => setMaxConcurrentJobs(e.target.value)}
-              variant="outlined"
-              size="small"
-              fullWidth
-              helperText="Maximum number of extraction jobs to run simultaneously"
-              sx={{ mb: 2 }}
-              aria-label="Maximum concurrent jobs"
+        <Panel title="Preferences" subtitle="Customize your experience">
+          <Stack spacing={1}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={mode === 'dark'}
+                  onChange={(e) => setMode(e.target.checked ? 'dark' : 'light')}
+                />
+              }
+              label="Dark mode"
             />
-            <Alert severity="info">
-              These settings will be applied on your next extraction job.
-            </Alert>
-          </CardContent>
-        </Card>
-      </Box>
-    </Container>
+            <Divider sx={{ my: 1 }} />
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={autoRefresh}
+                  onChange={(e) => {
+                    setAutoRefresh(e.target.checked);
+                    localStorage.setItem('autoRefresh', JSON.stringify(e.target.checked));
+                    addNotification({ type: 'success', message: 'Auto-refresh setting updated' });
+                  }}
+                />
+              }
+              label="Auto-refresh job status"
+            />
+          </Stack>
+        </Panel>
+
+        <Panel title="Performance" subtitle="Configure system behavior">
+          <TextField
+            label="Max concurrent jobs"
+            type="number"
+            inputProps={{ min: 1, max: 10 }}
+            value={maxConcurrentJobs}
+            onChange={(e) => setMaxConcurrentJobs(e.target.value)}
+            size="small"
+            fullWidth
+            helperText="Maximum number of extraction jobs to run simultaneously"
+            sx={{ mb: 2 }}
+            aria-label="Maximum concurrent jobs"
+          />
+          <Alert
+            severity="info"
+            sx={{
+              borderRadius: '10px',
+              bgcolor: isDark ? alpha(brand.indigo, 0.1) : alpha(brand.indigo, 0.06),
+            }}
+          >
+            These settings will be applied on your next extraction job.
+          </Alert>
+        </Panel>
+      </Stack>
+    </Box>
   );
 };
 

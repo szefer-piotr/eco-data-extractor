@@ -8,7 +8,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
   Button,
   Dialog,
   DialogTitle,
@@ -18,12 +17,17 @@ import {
   Chip,
   CircularProgress,
   Alert,
-  Container,
+  IconButton,
+  alpha,
+  useTheme,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import DeleteIcon from '@mui/icons-material/Delete';
-import ViewIcon from '@mui/icons-material/Visibility';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
+import AddIcon from '@mui/icons-material/Add';
 import { useUIStore } from '@store/uiStore';
+import Panel from '@components/layout/Panel';
+import { brand } from '../theme/theme';
 
 interface HistoryJob {
   id: string;
@@ -38,6 +42,8 @@ interface HistoryJob {
 
 const HistoryPage: React.FC = () => {
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
   const [jobs, setJobs] = useState<HistoryJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedJob, setSelectedJob] = useState<HistoryJob | null>(null);
@@ -45,45 +51,25 @@ const HistoryPage: React.FC = () => {
   const { addNotification } = useUIStore();
 
   useEffect(() => {
-    // Load jobs from localStorage
-    const loadJobs = () => {
-      try {
-        const stored = localStorage.getItem('jobHistory');
-        if (stored) {
-          setJobs(JSON.parse(stored));
-        }
-      } catch (err) {
-        console.error('Failed to load job history:', err);
-        addNotification({
-          type: 'error',
-          message: 'Failed to load job history',
-        });
-      } finally {
-        setLoading(false);
+    try {
+      const stored = localStorage.getItem('jobHistory');
+      if (stored) {
+        setJobs(JSON.parse(stored));
       }
-    };
-
-    loadJobs();
+    } catch (err) {
+      console.error('Failed to load job history:', err);
+      addNotification({ type: 'error', message: 'Failed to load job history' });
+    } finally {
+      setLoading(false);
+    }
   }, [addNotification]);
-
-  const handleView = (job: HistoryJob) => {
-    navigate(`/extraction?jobId=${job.id}`);
-  };
-
-  const handleDeleteClick = (job: HistoryJob) => {
-    setSelectedJob(job);
-    setDeleteDialogOpen(true);
-  };
 
   const handleConfirmDelete = () => {
     if (selectedJob) {
       const updatedJobs = jobs.filter((j) => j.id !== selectedJob.id);
       setJobs(updatedJobs);
       localStorage.setItem('jobHistory', JSON.stringify(updatedJobs));
-      addNotification({
-        type: 'success',
-        message: `Job "${selectedJob.fileName}" deleted`,
-      });
+      addNotification({ type: 'success', message: `Job "${selectedJob.fileName}" deleted` });
       setDeleteDialogOpen(false);
       setSelectedJob(null);
     }
@@ -91,99 +77,124 @@ const HistoryPage: React.FC = () => {
 
   const getStatusColor = (status: string): 'default' | 'success' | 'error' | 'warning' => {
     switch (status) {
-      case 'completed':
-        return 'success';
-      case 'failed':
-        return 'error';
-      case 'processing':
-        return 'warning';
-      default:
-        return 'default';
+      case 'completed': return 'success';
+      case 'failed': return 'error';
+      case 'processing': return 'warning';
+      default: return 'default';
     }
-  };
-
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
   };
 
   if (loading) {
     return (
-      <Container maxWidth="lg">
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
-          <CircularProgress />
-        </Box>
-      </Container>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
+        <CircularProgress />
+      </Box>
     );
   }
 
   return (
-    <Container maxWidth="lg">
-      <Box sx={{ py: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold', mb: 3 }}>
-          Extraction History
-        </Typography>
+    <Box sx={{ maxWidth: 1200, mx: 'auto' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3, gap: 2 }}>
+        <Box>
+          <Typography variant="h5" component="h1" sx={{ fontWeight: 700, mb: 0.5 }}>
+            Extraction History
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Review and manage past extraction jobs
+          </Typography>
+        </Box>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => navigate('/extraction')}
+          sx={{ borderRadius: '10px', flexShrink: 0 }}
+        >
+          New Extraction
+        </Button>
+      </Box>
 
+      <Panel title="All Jobs" subtitle={`${jobs.length} job${jobs.length !== 1 ? 's' : ''}`} noPadding>
         {jobs.length === 0 ? (
-          <Alert severity="info">
-            No extraction jobs yet.{' '}
-            <Button onClick={() => navigate('/extraction')} sx={{ ml: 1 }}>
-              Start a new extraction
-            </Button>
-          </Alert>
+          <Box sx={{ p: 4, textAlign: 'center' }}>
+            <Alert
+              severity="info"
+              sx={{
+                borderRadius: '12px',
+                bgcolor: isDark ? alpha(brand.indigo, 0.1) : alpha(brand.indigo, 0.06),
+                border: `1px solid ${alpha(brand.indigo, 0.15)}`,
+              }}
+            >
+              No extraction jobs yet.{' '}
+              <Button onClick={() => navigate('/extraction')} size="small" sx={{ ml: 1 }}>
+                Start a new extraction
+              </Button>
+            </Alert>
+          </Box>
         ) : (
-          <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
-            <Table sx={{ minWidth: '100%' }}>
-              <TableHead sx={{ bgcolor: '#f5f5f5' }}>
+          <TableContainer>
+            <Table>
+              <TableHead>
                 <TableRow>
-                  <TableCell sx={{ fontWeight: 'bold' }}>File Name</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Upload Date</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }} align="right">
-                    Rows
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }} align="right">
-                    Categories
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }} align="right">
-                    Actions
-                  </TableCell>
+                  <TableCell>File Name</TableCell>
+                  <TableCell>Upload Date</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell align="right">Rows</TableCell>
+                  <TableCell align="right">Categories</TableCell>
+                  <TableCell align="right">Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {jobs.map((job) => (
-                  <TableRow key={job.id} hover>
-                    <TableCell>{job.fileName}</TableCell>
-                    <TableCell>{new Date(job.uploadDate).toLocaleString()}</TableCell>
+                  <TableRow
+                    key={job.id}
+                    hover
+                    sx={{
+                      '&:hover': {
+                        bgcolor: isDark ? alpha('#ffffff', 0.03) : alpha('#0f172a', 0.02),
+                      },
+                    }}
+                  >
+                    <TableCell>
+                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                        {job.fileName}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" color="text.secondary">
+                        {new Date(job.uploadDate).toLocaleString()}
+                      </Typography>
+                    </TableCell>
                     <TableCell>
                       <Chip label={job.status} color={getStatusColor(job.status)} size="small" />
                     </TableCell>
                     <TableCell align="right">
-                      {job.rowsProcessed && job.totalRows ? `${job.rowsProcessed}/${job.totalRows}` : '—'}
+                      <Typography variant="body2" color="text.secondary">
+                        {job.rowsProcessed && job.totalRows
+                          ? `${job.rowsProcessed}/${job.totalRows}`
+                          : '—'}
+                      </Typography>
                     </TableCell>
                     <TableCell align="right">{job.categories}</TableCell>
                     <TableCell align="right">
-                      <Button
+                      <IconButton
                         size="small"
-                        startIcon={<ViewIcon />}
-                        onClick={() => handleView(job)}
-                        variant="text"
-                        sx={{ mr: 1 }}
+                        onClick={() => navigate(`/extraction?jobId=${job.id}`)}
+                        aria-label="View job"
+                        sx={{ color: brand.indigo }}
                       >
-                        View
-                      </Button>
-                      <Button
+                        <VisibilityOutlinedIcon fontSize="small" />
+                      </IconButton>
+                      <IconButton
                         size="small"
-                        startIcon={<DeleteIcon />}
-                        onClick={() => handleDeleteClick(job)}
-                        variant="text"
-                        color="error"
+                        onClick={() => {
+                          setSelectedJob(job);
+                          setDeleteDialogOpen(true);
+                        }}
+                        aria-label="Delete job"
+                        sx={{ color: 'error.main', ml: 0.5 }}
                       >
-                        Delete
-                      </Button>
+                        <DeleteOutlineIcon fontSize="small" />
+                      </IconButton>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -191,24 +202,29 @@ const HistoryPage: React.FC = () => {
             </Table>
           </TableContainer>
         )}
-      </Box>
+      </Panel>
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
-        <DialogTitle>Delete Job?</DialogTitle>
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+        PaperProps={{ sx: { borderRadius: '16px', maxWidth: 400 } }}
+      >
+        <DialogTitle sx={{ fontWeight: 600 }}>Delete Job?</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Are you sure you want to delete the job "{selectedJob?.fileName}"? This action cannot be undone.
+            Are you sure you want to delete "{selectedJob?.fileName}"? This action cannot be undone.
           </DialogContentText>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setDeleteDialogOpen(false)} variant="outlined">
+            Cancel
+          </Button>
           <Button onClick={handleConfirmDelete} color="error" variant="contained">
             Delete
           </Button>
         </DialogActions>
       </Dialog>
-    </Container>
+    </Box>
   );
 };
 

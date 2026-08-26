@@ -2,8 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box,
-  Card,
-  CardContent,
   Stepper,
   Step,
   StepLabel,
@@ -265,32 +263,30 @@ const ExtractionWorkflow: React.FC<ExtractionWorkflowProps> = ({
 
   // Full view with stepper
   return (
-    <Card>
-      <CardContent>
-        <Stack spacing={3}>
-          {/* Stepper */}
-          <Stepper activeStep={activeStep} alternativeLabel>
-            {steps.map((label) => (
-              <Step key={label}>
-                <StepLabel>{label}</StepLabel>
-              </Step>
-            ))}
-          </Stepper>
+    <Box>
+      <Stack spacing={3}>
+        {/* Stepper */}
+        <Stepper activeStep={activeStep} alternativeLabel>
+          {steps.map((label) => (
+            <Step key={label}>
+              <StepLabel>{label}</StepLabel>
+            </Step>
+          ))}
+        </Stepper>
 
-          <Divider />
+        <Divider />
 
-          {/* Error Display */}
-          {workflowError && (
-            <Alert severity="error" onClose={() => setWorkflowError(null)}>
-              {workflowError}
-            </Alert>
-          )}
+        {/* Error Display */}
+        {workflowError && (
+          <Alert severity="error" onClose={() => setWorkflowError(null)}>
+            {workflowError}
+          </Alert>
+        )}
 
-          {/* Step Content */}
-          {stepContent[activeStep]}
-        </Stack>
-      </CardContent>
-    </Card>
+        {/* Step Content */}
+        {stepContent[activeStep]}
+      </Stack>
+    </Box>
   );
 };
 

@@ -24,8 +24,10 @@ const NotificationCenter: React.FC = () => {
             variant="filled"
             sx={{
               width: '100%',
-              minWidth: '300px',
-              maxWidth: '400px',
+              minWidth: 300,
+              maxWidth: 400,
+              borderRadius: '12px',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
             }}
           >
             {notification.message}
