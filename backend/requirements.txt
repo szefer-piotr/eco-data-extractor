@@ -20,6 +20,7 @@ requests>=2.28.0                 # Ollama provider
 PyPDF2>=3.0.0
 pandas>=1.5.0
 chardet>=5.2.0                   # For CSV encoding detection
+docling>=2.0.0                   # Structured PDF parsing (optional at runtime)
 
 # Text processing
 nltk>=3.8.0
@@ -27,6 +28,14 @@ nltk>=3.8.0
 # Database
 sqlalchemy>=2.0
 alembic>=1.12.0
+psycopg2-binary>=2.9.0           # Postgres driver
+# pgvector                       # Enable when using Postgres + vector indexes
+
+# Synthesis / graph (lightweight)
+networkx>=3.0
+
+# Orchestration (Phase 6)
+# prefect>=2.14.0                # Optional; pipelines/ use a simple runner by default
 
 # Testing
 pytest>=7.0

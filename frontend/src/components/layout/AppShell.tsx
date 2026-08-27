@@ -19,6 +19,7 @@ import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
 import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
 import HistoryOutlinedIcon from '@mui/icons-material/HistoryOutlined';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
+import AccountTreeOutlinedIcon from '@mui/icons-material/AccountTreeOutlined';
 import MenuIcon from '@mui/icons-material/Menu';
 import CloseIcon from '@mui/icons-material/Close';
 import DarkModeOutlinedIcon from '@mui/icons-material/DarkModeOutlined';
@@ -38,6 +39,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { label: 'Home', path: '/', icon: <HomeOutlinedIcon /> },
   { label: 'Extraction', path: '/extraction', icon: <ScienceOutlinedIcon /> },
+  { label: 'Projects', path: '/projects', icon: <AccountTreeOutlinedIcon /> },
   { label: 'History', path: '/history', icon: <HistoryOutlinedIcon /> },
   { label: 'Settings', path: '/settings', icon: <SettingsOutlinedIcon /> },
 ];

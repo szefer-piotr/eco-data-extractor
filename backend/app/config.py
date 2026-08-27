@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
     LOG_FILE: str = "./logs/app.log"
 
-    # Database settings
+    # Database settings (Postgres recommended in production; SQLite works locally)
     DATABASE_URL: str = "sqlite:///./ecodata.db"
     DATABASE_ECHO: bool = False  # Set to True for SQL debugging
 
@@ -36,6 +36,11 @@ class Settings(BaseSettings):
     DEFAULT_TEMPERATURE: float = 0.7
     MAX_RETRIES: int = 3
     REQUEST_TIMEOUT_SECONDS: int = 300
+    LLM_PROMPT_VERSION: str = "assertion_v1"
+    LLM_CACHE_ENABLED: bool = True
+    CHEAP_MODEL: str = "gpt-4o-mini"
+    STRONG_MODEL: str = "gpt-4o"
+    WINDOW_MAX_WORDS: int = 500
 
     # File upload settings
     ALLOWED_FILE_TYPES: List[str] = ["csv", "pdf"]

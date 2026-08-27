@@ -9,6 +9,11 @@ import ExtractionPage from '@pages/ExtractionPage';
 import HistoryPage from '@pages/HistoryPage';
 import SettingsPage from '@pages/SettingsPage';
 import NotFoundPage from '@pages/NotFoundPage';
+import ProjectsPage from '@pages/ProjectsPage';
+import ProjectDetailPage from '@pages/ProjectDetailPage';
+import ComparisonPage from '@pages/ComparisonPage';
+import GapsPage from '@pages/GapsPage';
+import HypothesesPage from '@pages/HypothesesPage';
 import './App.css';
 
 const App: React.FC = () => {
@@ -22,6 +27,11 @@ const App: React.FC = () => {
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/extraction" element={<ExtractionPage />} />
+            <Route path="/projects" element={<ProjectsPage />} />
+            <Route path="/projects/:projectId" element={<ProjectDetailPage />} />
+            <Route path="/projects/:projectId/comparison" element={<ComparisonPage />} />
+            <Route path="/projects/:projectId/gaps" element={<GapsPage />} />
+            <Route path="/projects/:projectId/hypotheses" element={<HypothesesPage />} />
             <Route path="/history" element={<HistoryPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="*" element={<NotFoundPage />} />

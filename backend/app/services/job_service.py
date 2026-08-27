@@ -35,11 +35,12 @@ class JobManager:
             "processed_rows": 0,
             "current_row": None,
             "progress_percent": 0.0,
-            "categories": [],
+            "categories": [c.model_dump() if hasattr(c, "model_dump") else c for c in categories],
             "provider": provider,
             "model": model,
             "results": [],
-            "errors": []
+            "errors": [],
+            "tokens_used": 0,
         }
 
         JobManager._jobs[job_id] = job

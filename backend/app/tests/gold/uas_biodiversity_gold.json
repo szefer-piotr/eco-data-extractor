@@ -1,0 +1,36 @@
+{
+  "description": "Gold set stub for Case Study 1 style assertions (expand to 40–50 papers).",
+  "prompt_version": "assertion_v1",
+  "items": [
+    {
+      "work_external_id": "polar_bear_uas",
+      "text": "We recorded vigilance behaviours during UAS surveys. The number of vigilance events was 13.4 +/- 3.7 and vigilance bout lengths was 18.7 +/- 2.6 s.",
+      "expected_assertions": [
+        {
+          "subject_contains": ["UAS", "drone"],
+          "predicate_in": ["affects", "increases", "measures"],
+          "object_contains": ["vigilance"],
+          "direction_in": ["increase", "not_applicable", "mixed"],
+          "must_have_evidence": true
+        }
+      ],
+      "negative_cases": [
+        {
+          "description": "Do not treat interaction terms as effect sizes",
+          "text_snippet": "The model interaction term species×treatment was significant (p<0.05).",
+          "forbid_effect_extraction": true
+        }
+      ]
+    },
+    {
+      "work_external_id": "multi_effect_sizes",
+      "text": "Effect sizes were Hedges g = 0.45 for density, g = 0.62 for richness, g = 0.21 for evenness, and g = -0.10 for biomass.",
+      "expected_assertions": [
+        {"object_contains": ["density"], "must_extract_effect_verbatim": "0.45"},
+        {"object_contains": ["richness"], "must_extract_effect_verbatim": "0.62"},
+        {"object_contains": ["evenness"], "must_extract_effect_verbatim": "0.21"},
+        {"object_contains": ["biomass"], "must_extract_effect_verbatim": "-0.10"}
+      ]
+    }
+  ]
+}
