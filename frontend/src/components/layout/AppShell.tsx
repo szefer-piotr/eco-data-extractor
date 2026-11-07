@@ -19,12 +19,15 @@ import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
 import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
 import HistoryOutlinedIcon from '@mui/icons-material/HistoryOutlined';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
+import AccountTreeOutlinedIcon from '@mui/icons-material/AccountTreeOutlined';
+import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
 import MenuIcon from '@mui/icons-material/Menu';
 import CloseIcon from '@mui/icons-material/Close';
 import DarkModeOutlinedIcon from '@mui/icons-material/DarkModeOutlined';
 import LightModeOutlinedIcon from '@mui/icons-material/LightModeOutlined';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import { useThemeMode } from '@context/ThemeModeContext';
+import { useLoadProviders } from '@hooks/useLoadProviders';
 import { brand } from '../../theme/theme';
 
 const SIDEBAR_WIDTH = 240;
@@ -38,6 +41,8 @@ interface NavItem {
 const navItems: NavItem[] = [
   { label: 'Home', path: '/', icon: <HomeOutlinedIcon /> },
   { label: 'Extraction', path: '/extraction', icon: <ScienceOutlinedIcon /> },
+  { label: 'Projects', path: '/projects', icon: <AccountTreeOutlinedIcon /> },
+  { label: 'Guide', path: '/guide', icon: <MenuBookOutlinedIcon /> },
   { label: 'History', path: '/history', icon: <HistoryOutlinedIcon /> },
   { label: 'Settings', path: '/settings', icon: <SettingsOutlinedIcon /> },
 ];
@@ -54,6 +59,7 @@ const AppShell: React.FC<AppShellProps> = ({ children }) => {
   const { mode, toggleMode } = useThemeMode();
   const location = useLocation();
   const navigate = useNavigate();
+  useLoadProviders();
 
   const sidebarContent = (
     <Box
@@ -106,7 +112,7 @@ const AppShell: React.FC<AppShellProps> = ({ children }) => {
       {/* Nav */}
       <List sx={{ px: 1.5, py: 2, flex: 1 }}>
         {navItems.map(({ label, path, icon }) => {
-          const active = location.pathname === path;
+          const active = location.pathname === path || (path !== '/' && location.pathname.startsWith(path + '/'));
           return (
             <ListItemButton
               key={path}

@@ -1,0 +1,56 @@
+# Production-oriented compose for Eco Data Extractor + Evidence Synthesis
+# Usage: docker compose up --build
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: eco
+      POSTGRES_PASSWORD: eco
+      POSTGRES_DB: ecodata
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U eco -d ecodata"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+    environment:
+      ENVIRONMENT: production
+      DATABASE_URL: postgresql+psycopg2://eco:eco@db:5432/ecodata
+      CORS_ORIGINS: '["http://localhost:3000","http://localhost:5173"]'
+      UPLOAD_DIR: /data/uploads
+      TEMP_DIR: /data/temp
+      MAX_RETRIES: "3"
+      MAX_CONCURRENT_JOBS: "5"
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      GROK_API_KEY: ${GROK_API_KEY:-}
+    volumes:
+      - uploaddata:/data
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: http://localhost:8000/api
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
+  uploaddata:

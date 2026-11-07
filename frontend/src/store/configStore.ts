@@ -24,6 +24,7 @@ interface ConfigStore {
   setTestingConnection: (provider: string, testing: boolean) => void;
 
   isConfigComplete: () => boolean;
+  hasProviderApiKey: (provider: string) => boolean;
   getProviderInfo: (provider: string) => import('@api-types/api').ProviderInfo | null;
 }
 
@@ -97,12 +98,18 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
       },
     })),
 
+  hasProviderApiKey: (provider) => {
+    const state = get();
+    const info = state.models?.providers[provider];
+    if (!info) return Boolean(state.apiKeys[provider]);
+    if (!info.requires_api_key) return true;
+    return Boolean(state.apiKeys[provider] || info.has_api_key);
+  },
+
   isConfigComplete: () => {
     const state = get();
     const { provider, model } = state.selectedConfig || {};
-    const hasApiKey = !state.models?.providers[provider!]?.requires_api_key ||
-                      state.apiKeys[provider!];
-    return Boolean(provider && model && hasApiKey);
+    return Boolean(provider && model && get().hasProviderApiKey(provider));
   },
 
   getProviderInfo: (provider) => {

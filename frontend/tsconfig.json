@@ -19,17 +19,16 @@
         "jsx": "react-jsx",
         
         /* Path mapping for cleaner imports */
-        "baseUrl": "src",
         "paths": {
-            "@components/*": ["components/*"],
-            "@pages/*": ["pages/*"],
-            "@services/*": ["services/*"],
-            "@hooks/*": ["hooks/*"],
-            "@context/*": ["context/*"],
-            "@store/*": ["store/*"],
-            "@api-types/*": ["types/*"],
-            "@utils/*": ["utils/*"],
-            "@styles/*": ["styles/*"]
+            "@components/*": ["./src/components/*"],
+            "@pages/*": ["./src/pages/*"],
+            "@services/*": ["./src/services/*"],
+            "@hooks/*": ["./src/hooks/*"],
+            "@context/*": ["./src/context/*"],
+            "@store/*": ["./src/store/*"],
+            "@api-types/*": ["./src/types/*"],
+            "@utils/*": ["./src/utils/*"],
+            "@styles/*": ["./src/styles/*"]
         }
     },
     "include": ["src"],

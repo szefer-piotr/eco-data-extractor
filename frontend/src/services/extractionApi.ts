@@ -24,9 +24,7 @@ export const extractionApi = {
     formData.append('model', model);
     formData.append('api_key', apiKey);
 
-    const response = await api.post('/upload/csv', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    const response = await api.post('/upload/csv', formData);
     return response.data;
   },
 
@@ -50,9 +48,7 @@ export const extractionApi = {
     formData.append('model', model);
     formData.append('api_key', apiKey);
 
-    const response = await api.post('/upload/pdf', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    const response = await api.post('/upload/pdf', formData);
     return response.data;
   },
 
