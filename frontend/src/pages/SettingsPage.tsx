@@ -13,6 +13,7 @@ import {
   Chip,
   alpha,
   useTheme,
+  CircularProgress,
 } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
@@ -20,6 +21,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { useConfigStore } from '@store/configStore';
 import { useUIStore } from '@store/uiStore';
 import { useThemeMode } from '@context/ThemeModeContext';
+import { configApi } from '@services/configApi';
 import Panel from '@components/layout/Panel';
 import { brand } from '../theme/theme';
 
@@ -30,7 +32,7 @@ interface APIKeyState {
 }
 
 const SettingsPage: React.FC = () => {
-  const { apiKeys, setApiKey, removeApiKey, models } = useConfigStore();
+  const { apiKeys, setApiKey, removeApiKey, models, isLoading, error, hasProviderApiKey } = useConfigStore();
   const { addNotification } = useUIStore();
   const { mode, setMode } = useThemeMode();
   const theme = useTheme();
@@ -52,12 +54,13 @@ const SettingsPage: React.FC = () => {
     }
   }, [models, apiKeys]);
 
-  const handleSaveAPIKey = (provider: string, key: string) => {
+  const handleSaveAPIKey = async (provider: string, key: string) => {
     try {
       if (!key.trim()) {
         removeApiKey(provider);
         addNotification({ type: 'success', message: `API key for ${provider} removed` });
       } else {
+        await configApi.setApiKey(provider, key);
         setApiKey(provider, key);
         addNotification({ type: 'success', message: `API key for ${provider} saved` });
       }
@@ -88,12 +91,24 @@ const SettingsPage: React.FC = () => {
       <Stack spacing={2.5}>
         <Panel title="API Keys & Providers" subtitle="Configure your LLM provider credentials">
           <Stack spacing={2}>
-            {apiKeyInputs.length === 0 ? (
+            {isLoading && apiKeyInputs.length === 0 ? (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 1 }}>
+                <CircularProgress size={18} />
+                <Typography variant="body2" color="text.secondary">
+                  Loading providers…
+                </Typography>
+              </Box>
+            ) : error && apiKeyInputs.length === 0 ? (
+              <Alert severity="error">{error}</Alert>
+            ) : apiKeyInputs.length === 0 ? (
               <Typography variant="body2" color="text.secondary">
                 No providers available. Start the backend to load provider options.
               </Typography>
             ) : (
-              apiKeyInputs.map((item) => (
+              apiKeyInputs.map((item) => {
+                const fromEnv = Boolean(models?.providers[item.provider]?.has_api_key) && !apiKeys[item.provider];
+                const configured = hasProviderApiKey(item.provider);
+                return (
                 <Box
                   key={item.provider}
                   sx={{
@@ -105,22 +120,34 @@ const SettingsPage: React.FC = () => {
                 >
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
                     <Typography variant="subtitle2" sx={{ fontWeight: 600, textTransform: 'capitalize' }}>
-                      {item.provider}
+                      {models?.providers[item.provider]?.name || item.provider}
                     </Typography>
-                    {apiKeys[item.provider] && (
+                    {configured && (
                       <Chip
                         icon={<CheckCircleIcon />}
-                        label="Configured"
+                        label={
+                          models?.providers[item.provider]?.requires_api_key === false
+                            ? 'No key required'
+                            : fromEnv
+                              ? 'Configured from .env'
+                              : 'Configured'
+                        }
                         color="success"
                         size="small"
                         variant="outlined"
                       />
                     )}
                   </Box>
+                  {models?.providers[item.provider]?.requires_api_key !== false && (
+                    <>
                   <Box sx={{ display: 'flex', gap: 1 }}>
                     <TextField
                       type={item.visible ? 'text' : 'password'}
-                      placeholder={`Enter ${item.provider} API key`}
+                      placeholder={
+                        fromEnv
+                          ? 'Leave blank to keep the key from .env'
+                          : `Enter ${item.provider} API key`
+                      }
                       value={item.key}
                       onChange={(e) =>
                         setApiKeyInputs((prev) =>
@@ -167,8 +194,11 @@ const SettingsPage: React.FC = () => {
                       </Button>
                     )}
                   </Box>
+                    </>
+                  )}
                 </Box>
-              ))
+                );
+              })
             )}
           </Stack>
         </Panel>

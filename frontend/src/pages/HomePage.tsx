@@ -16,6 +16,7 @@ import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined';
 import SmartToyOutlinedIcon from '@mui/icons-material/SmartToyOutlined';
 import TuneOutlinedIcon from '@mui/icons-material/TuneOutlined';
 import TableChartOutlinedIcon from '@mui/icons-material/TableChartOutlined';
+import AccountTreeOutlinedIcon from '@mui/icons-material/AccountTreeOutlined';
 import Panel from '@components/layout/Panel';
 import { gradientText, brand } from '../theme/theme';
 
@@ -51,6 +52,12 @@ const features = [
     title: 'Export Results',
     description: 'Download as CSV or JSON',
     color: '#06b6d4',
+  },
+  {
+    icon: <AccountTreeOutlinedIcon />,
+    title: 'Evidence Synthesis',
+    description: 'PECO-scoped projects with comparison tables, gaps, and hypotheses',
+    color: '#10b981',
   },
 ];
 
@@ -126,6 +133,15 @@ const HomePage: React.FC = () => {
             sx={{ px: 3, py: 1.5, borderRadius: '12px' }}
           >
             Start Extraction
+          </Button>
+          <Button
+            variant="outlined"
+            size="large"
+            onClick={() => navigate('/projects')}
+            startIcon={<AccountTreeOutlinedIcon />}
+            sx={{ px: 3, py: 1.5, borderRadius: '12px' }}
+          >
+            Evidence Synthesis
           </Button>
           <Button
             variant="outlined"

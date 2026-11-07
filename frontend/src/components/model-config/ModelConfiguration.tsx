@@ -39,16 +39,16 @@ const ModelConfiguration: React.FC<ModelConfigurationProps> = ({
   const {
     models,
     selectedConfig,
-    apiKeys,
     isConfigComplete,
     getProviderInfo,
+    hasProviderApiKey,
   } = useConfigStore();
 
   const [activeStep, setActiveStep] = useState(0);
 
   const currentProvider = selectedConfig?.provider;
   const providerRequiresKey = currentProvider && getProviderInfo(currentProvider)?.requires_api_key;
-  const hasApiKey = currentProvider && apiKeys[currentProvider];
+  const hasApiKey = currentProvider && hasProviderApiKey(currentProvider);
 
   const steps = ['Provider', 'Model', 'API Key', 'Parameters'];
 

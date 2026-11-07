@@ -24,6 +24,27 @@ def _register_providers():
             "ollama": OllamaProvider,
         }
 
+_ENV_KEY_ATTRS = {
+    "openai": "OPENAI_API_KEY",
+    "google": "GOOGLE_API_KEY",
+    "deepseek": "DEEPSEEK_API_KEY",
+    "grok": "GROK_API_KEY",
+}
+
+
+def resolve_api_key(provider_name: str, api_key: Optional[str] = None) -> Optional[str]:
+    """Prefer an explicit key, then the matching value from .env / environment."""
+    if api_key and api_key.strip():
+        return api_key.strip()
+    from app.config import settings
+
+    attr = _ENV_KEY_ATTRS.get(provider_name.lower())
+    if not attr:
+        return None
+    env_key = getattr(settings, attr, "") or ""
+    return env_key.strip() or None
+
+
 def get_provider(
     provider_name: str,
     model_name: str,
@@ -59,7 +80,7 @@ def get_provider(
     
     return provider_class(
         model_name=model_name,
-        api_key=api_key,
+        api_key=resolve_api_key(provider_name, api_key),
         base_url=base_url,
         temperature=temperature
     )
@@ -99,4 +120,4 @@ def get_available_providers() -> Dict[str, dict]:
         }
     }
 
-__all__ = ["BaseLLMProvider", "get_provider", "get_available_providers"]
+__all__ = ["BaseLLMProvider", "get_provider", "get_available_providers", "resolve_api_key"]

@@ -69,6 +69,7 @@ export interface ProviderInfo {
   models: string[];
   requires_api_key: boolean;
   default_model: string;
+  has_api_key?: boolean;
 }
 
 export interface ProvidersConfig {

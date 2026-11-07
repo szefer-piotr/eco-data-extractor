@@ -24,7 +24,7 @@ interface APIKeyInputProps {
 }
 
 const APIKeyInput: React.FC<APIKeyInputProps> = ({ provider, onSuccess }) => {
-  const { apiKeys, testingConnection, setApiKey, setTestingConnection, setError } = useConfigStore();
+  const { apiKeys, testingConnection, setApiKey, setTestingConnection, setError, hasProviderApiKey } = useConfigStore();
   
   const [showPassword, setShowPassword] = useState(false);
   const [apiKey, setLocalApiKey] = useState('');
@@ -37,13 +37,15 @@ const APIKeyInput: React.FC<APIKeyInputProps> = ({ provider, onSuccess }) => {
   const isTesting = testingConnection[provider] || false;
   const storedKey = apiKeys[provider];
 
-  // Check if API key is already stored
+  // Check if API key is already stored or provided via .env
   useEffect(() => {
     if (storedKey) {
       setHasConfigured(true);
       setLocalApiKey(storedKey);
+    } else if (hasProviderApiKey(provider)) {
+      setHasConfigured(true);
     }
-  }, [storedKey]);
+  }, [storedKey, provider, hasProviderApiKey]);
 
   const handleSaveApiKey = async () => {
     if (!apiKey.trim()) {

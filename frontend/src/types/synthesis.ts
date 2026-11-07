@@ -187,3 +187,28 @@ export interface ExtractionTemplate {
     allowed_values?: string[] | null;
   }>;
 }
+
+export interface ContradictionReport {
+  cluster_id: string;
+  supporting: string[];
+  opposing: string[];
+  possible_moderators: string[];
+  summary: string;
+}
+
+export interface TemporalValidation {
+  cutoff_year: number;
+  pre_cutoff_works: number;
+  post_cutoff_works: number;
+  coverage_gaps: number;
+  hits_in_post_cutoff: number;
+  hit_rate: number | null;
+  note: string;
+}
+
+export interface BatchPdfUploadResult {
+  works: Work[];
+  errors: Array<{ filename: string; detail: string }>;
+  uploaded: number;
+  failed: number;
+}

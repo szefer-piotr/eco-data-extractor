@@ -1,6 +1,8 @@
 import api from './api';
 import type {
+  BatchPdfUploadResult,
   ComparisonTable,
+  ContradictionReport,
   GapRecord,
   Hypothesis,
   Project,
@@ -8,6 +10,7 @@ import type {
   QARequest,
   QAResponse,
   ReviewDraft,
+  TemporalValidation,
   Work,
   Assertion,
   Heatmap,
@@ -45,9 +48,7 @@ export const synthesisApi = {
     if (columns?.textColumn) form.append('text_column', columns.textColumn);
     if (columns?.titleColumn) form.append('title_column', columns.titleColumn);
     return api
-      .post<Work[]>(`/synthesis/projects/${projectId}/works/csv`, form, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      })
+      .post<Work[]>(`/synthesis/projects/${projectId}/works/csv`, form)
       .then((r) => r.data);
   },
 
@@ -56,11 +57,38 @@ export const synthesisApi = {
     form.append('file', file);
     if (title) form.append('title', title);
     return api
-      .post<Work>(`/synthesis/projects/${projectId}/works/pdf`, form, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      })
+      .post<Work>(`/synthesis/projects/${projectId}/works/pdf`, form)
       .then((r) => r.data);
   },
+
+  uploadPdfs: (projectId: string, files: File[]) => {
+    const form = new FormData();
+    for (const file of files) {
+      form.append('files', file);
+    }
+    return api
+      .post<BatchPdfUploadResult>(`/synthesis/projects/${projectId}/works/pdfs`, form)
+      .then((r) => r.data);
+  },
+
+  updateScreening: (workId: string, status: string, rationale?: string) =>
+    api
+      .patch<Work>(`/synthesis/works/${workId}/screening`, null, {
+        params: { status, ...(rationale ? { rationale } : {}) },
+      })
+      .then((r) => r.data),
+
+  listContradictions: (projectId: string) =>
+    api
+      .get<ContradictionReport[]>(`/synthesis/projects/${projectId}/contradictions`)
+      .then((r) => r.data),
+
+  temporalValidation: (projectId: string, cutoffYear = 2022) =>
+    api
+      .get<TemporalValidation>(`/synthesis/projects/${projectId}/hypotheses/temporal-validation`, {
+        params: { cutoff_year: cutoffYear },
+      })
+      .then((r) => r.data),
 
   runExtract: (
     projectId: string,

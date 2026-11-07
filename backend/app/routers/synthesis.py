@@ -15,6 +15,7 @@ from app.database.session import get_db
 from app.models.synthesis_models import (
     AssertionResponse,
     AssertionReviewUpdate,
+    BatchPdfUploadResponse,
     ComparisonTableResponse,
     CostSummary,
     EvidenceCluster,
@@ -22,6 +23,7 @@ from app.models.synthesis_models import (
     HypothesisCheckRequest,
     HypothesisCreate,
     HypothesisResponse,
+    PdfUploadError,
     ProjectCreate,
     ProjectResponse,
     ProjectUpdate,
@@ -152,6 +154,56 @@ async def upload_work_pdf(
         )
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.post("/projects/{project_id}/works/pdfs", response_model=BatchPdfUploadResponse)
+async def upload_work_pdfs(
+    project_id: str,
+    files: List[UploadFile] = File(...),
+    db: Session = Depends(get_db),
+):
+    """Batch-upload PDFs (multi-select or folder). Non-PDF files are skipped."""
+    project = SynthesisService.get_project(db, project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    upload_root = Path(settings.UPLOAD_DIR) / "projects" / project_id
+    upload_root.mkdir(parents=True, exist_ok=True)
+
+    works: List[WorkResponse] = []
+    errors: List[PdfUploadError] = []
+
+    for file in files:
+        filename = file.filename or "unknown.pdf"
+        # Folder uploads may include nested paths and non-PDF files
+        basename = Path(filename).name
+        if not basename.lower().endswith(".pdf"):
+            continue
+        dest = upload_root / f"{uuid.uuid4()}_{basename}"
+        try:
+            with dest.open("wb") as fh:
+                shutil.copyfileobj(file.file, fh)
+            work = SynthesisService.add_work_from_pdf(
+                db, project_id, str(dest), title=basename
+            )
+            works.append(work)
+        except Exception as exc:  # noqa: BLE001 — continue batch on per-file failures
+            errors.append(PdfUploadError(filename=basename, detail=str(exc)))
+            if dest.exists():
+                dest.unlink(missing_ok=True)
+
+    if not works and not errors:
+        raise HTTPException(
+            status_code=400,
+            detail="No PDF files found in the upload. Select .pdf files or a folder containing them.",
+        )
+
+    return BatchPdfUploadResponse(
+        works=works,
+        errors=errors,
+        uploaded=len(works),
+        failed=len(errors),
+    )
 
 
 @router.patch("/works/{work_id}/screening", response_model=WorkResponse)

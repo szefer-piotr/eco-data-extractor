@@ -185,3 +185,59 @@ def test_template_registry():
     t = get_template("uas_biodiversity_v1")
     assert "affects" in t.predicates
     assert len(list_templates()) >= 2
+
+
+def test_batch_pdf_upload(client, monkeypatch):
+    create = client.post(
+        "/api/synthesis/projects",
+        json={
+            "name": "PDF batch",
+            "question": "UAS effects",
+            "peco": {
+                "population": "wildlife",
+                "exposure": "UAS",
+                "outcome": "vigilance",
+            },
+            "template_id": "uas_biodiversity_v1",
+        },
+    )
+    project_id = create.json()["id"]
+
+    def fake_extract(_path: str):
+        return (
+            "Multirotor UAS surveys increased vigilance behaviour in polar bears.",
+            {"parser": "test"},
+        )
+
+    monkeypatch.setattr(
+        "app.services.synthesis.service.DocumentIngestService.extract_pdf_text",
+        fake_extract,
+    )
+    monkeypatch.setattr(
+        "app.services.synthesis.service.DocumentIngestService.enrich_metadata",
+        lambda **_kwargs: {},
+    )
+
+    # Minimal PDF-looking bytes; content is ignored because extract is mocked
+    pdf_bytes = b"%PDF-1.4 fake content"
+    resp = client.post(
+        f"/api/synthesis/projects/{project_id}/works/pdfs",
+        files=[
+            ("files", ("paper_a.pdf", pdf_bytes, "application/pdf")),
+            ("files", ("paper_b.pdf", pdf_bytes, "application/pdf")),
+            ("files", ("notes.txt", b"not a pdf", "text/plain")),
+        ],
+    )
+    assert resp.status_code == 200, resp.text
+    data = resp.json()
+    assert data["uploaded"] == 2
+    assert data["failed"] == 0
+    assert len(data["works"]) == 2
+    titles = {w["title"] for w in data["works"]}
+    assert titles == {"paper_a.pdf", "paper_b.pdf"}
+
+    empty = client.post(
+        f"/api/synthesis/projects/{project_id}/works/pdfs",
+        files=[("files", ("readme.txt", b"x", "text/plain"))],
+    )
+    assert empty.status_code == 400

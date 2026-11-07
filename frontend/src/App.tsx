@@ -14,6 +14,7 @@ import ProjectDetailPage from '@pages/ProjectDetailPage';
 import ComparisonPage from '@pages/ComparisonPage';
 import GapsPage from '@pages/GapsPage';
 import HypothesesPage from '@pages/HypothesesPage';
+import GuidePage from '@pages/GuidePage';
 import './App.css';
 
 const App: React.FC = () => {
@@ -32,6 +33,7 @@ const App: React.FC = () => {
             <Route path="/projects/:projectId/comparison" element={<ComparisonPage />} />
             <Route path="/projects/:projectId/gaps" element={<GapsPage />} />
             <Route path="/projects/:projectId/hypotheses" element={<HypothesesPage />} />
+            <Route path="/guide" element={<GuidePage />} />
             <Route path="/history" element={<HistoryPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="*" element={<NotFoundPage />} />

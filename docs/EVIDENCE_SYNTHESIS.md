@@ -1,5 +1,7 @@
 # Evidence Synthesis Operator Guide
 
+For a step-by-step explanation of inputs, processing, and why each stage exists, see [EVIDENCE_SYNTHESIS_HOW_IT_WORKS.md](EVIDENCE_SYNTHESIS_HOW_IT_WORKS.md).
+
 ## What this feature does
 
 Evidence Synthesis Projects turn paper corpora into:
@@ -27,7 +29,7 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:5173 → **Projects**.
+Open http://localhost:3000 → **Projects**.
 
 ## Production (Docker)
 
@@ -54,11 +56,15 @@ PYTHONPATH=backend python -m pipelines.synthesis_runner \
 ## Recommended workflow
 
 1. Create project with PECO + template (`uas_biodiversity_v1`)
-2. Upload CSV abstracts and/or PDFs
+2. Upload CSV abstracts and/or PDFs (multi-select or a folder of PDFs)
 3. Run **Extract → Canonicalize → Synthesize**
 4. Review pending assertions (numeric effects are queued)
 5. Open Comparison table and Gaps heatmap
 6. Ask Q&A / draft review / generate hypotheses
+
+## PECO examples
+
+- [Insect herbivory and succession predictability](PECO_EXAMPLE_HERBIVORY_SUCCESSION.md) — paste-ready PECO, inclusion rules, and outcome extraction hints.
 
 ## Observability
 

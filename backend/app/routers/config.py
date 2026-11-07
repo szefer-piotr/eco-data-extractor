@@ -8,13 +8,26 @@ from typing import Dict
 
 from app.models.request_models import APIKeyRequest, ProviderEnum
 from app.models.response_models import ProviderInfo, ConfigurationResponse
-from app.services.llm_providers import get_available_providers
+from app.services.llm_providers import get_available_providers, resolve_api_key
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
 # Temporary API key storage
 _api_keys: Dict[str, str] = {}
+
+
+def _serialize_provider(prov_name: str, config: dict) -> dict:
+    return {
+        "name": config["name"],
+        "models": config["models"],
+        "requires_api_key": config["requires_api_key"],
+        "default_model": config.get(
+            "default_model",
+            config["models"][0] if config["models"] else "",
+        ),
+        "has_api_key": bool(resolve_api_key(prov_name) or _api_keys.get(prov_name)),
+    }
 
 
 @router.post("/api-keys")
@@ -103,12 +116,7 @@ def get_models(provider: str = None):
                 )
             return {
                 "providers": {
-                    provider: {
-                        "name": all_providers[provider]["name"],
-                        "models": all_providers[provider]["models"],
-                        "requires_api_key": all_providers[provider]["requires_api_key"],
-                        "default_model": all_providers[provider].get("default_model", all_providers[provider]["models"][0] if all_providers[provider]["models"] else "")
-                    }
+                    provider: _serialize_provider(provider, all_providers[provider])
                 },
                 "defaultProvider": provider,
                 "defaultModel": all_providers[provider].get("default_model", all_providers[provider]["models"][0] if all_providers[provider]["models"] else "")
@@ -117,12 +125,7 @@ def get_models(provider: str = None):
         # Build the response with proper structure
         providers_dict = {}
         for prov_name, config in all_providers.items():
-            providers_dict[prov_name] = {
-                "name": config["name"],
-                "models": config["models"],
-                "requires_api_key": config["requires_api_key"],
-                "default_model": config.get("default_model", config["models"][0] if config["models"] else "")
-            }
+            providers_dict[prov_name] = _serialize_provider(prov_name, config)
         
         return {
             "providers": providers_dict,

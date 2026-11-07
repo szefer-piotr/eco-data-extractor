@@ -48,6 +48,9 @@ ecodata.db
 *.backup
 .backup/
 
+# Manuscript drafts (local only)
+manuscript/
+
 # Other
 tinter_app
 refactoring_plan
